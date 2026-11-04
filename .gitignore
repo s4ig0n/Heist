@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AG Studio license files
+*.license
+
+# Allow safe environment variable templates
+!.env.example

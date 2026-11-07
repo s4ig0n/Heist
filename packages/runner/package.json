@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "attack": "tsx src/attack.ts"
+    "attack": "tsx src/attack.ts",
+    "verify": "tsx src/verify-evidence.ts"
   },
   "packageManager": "pnpm@12.16.1",
   "license": "Apache-2.0",

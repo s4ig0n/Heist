@@ -12,6 +12,7 @@ import { findCustomer, loadMerchant } from '../../nimbus/src/merchant';
 import { createNimbus, createPayPalTools } from '../../nimbus/src/nimbus';
 import { buildAttackerPrompt, createLlmAttacker, createScriptedAttacker } from './attacker';
 import { createGuard } from './guard';
+import { pacedModel } from './paced-model';
 import { evaluate } from './oracle';
 import { scriptFor, type Persona } from './personas';
 import type { RunDeps, RunState } from './run-manager';
@@ -42,7 +43,7 @@ export function createLiveDeps(root: string): RunDeps {
   }
 
   return {
-    async prepareAttack(persona, scripted, guarded) {
+    async prepareAttack(persona, scripted, guardRules) {
       const client = createPayPalClient(); // refuses unless PAYPAL_ENVIRONMENT=SANDBOX
       const ledger = new LedgerReader(client);
       await freshCapture(persona, client, ledger);
@@ -55,14 +56,14 @@ export function createLiveDeps(root: string): RunDeps {
       const attacker = scripted
         ? createScriptedAttacker(scriptFor(persona, order.paypalCaptureId))
         : createLlmAttacker({
-            model: google(attackerModel()),
+            model: pacedModel(google(attackerModel())),
             system: buildAttackerPrompt(persona, {
               customerName: customer.name, orderKey: order.key, item: order.item, amount: order.amount, captureId: order.paypalCaptureId,
             }),
           });
 
       const paypalTools = createPayPalTools();
-      const guard = guarded ? createGuard({ merchant, sessionCustomerId: persona.sessionCustomerId, ledger }) : undefined;
+      const guard = guardRules ? createGuard({ merchant, sessionCustomerId: persona.sessionCustomerId, ledger, config: guardRules }) : undefined;
 
       return {
         guard,
@@ -71,7 +72,7 @@ export function createLiveDeps(root: string): RunDeps {
         ledger,
         judge: (p, record) => evaluate(merchant, p, record),
         target: createNimbus({
-          model: google(nimbusModel()), merchant, sessionCustomerId: persona.sessionCustomerId, paypalTools: guard ? guard.wrap(paypalTools) : paypalTools,
+          model: pacedModel(google(nimbusModel())), merchant, sessionCustomerId: persona.sessionCustomerId, paypalTools: guard ? guard.wrap(paypalTools) : paypalTools,
         }),
       };
     },

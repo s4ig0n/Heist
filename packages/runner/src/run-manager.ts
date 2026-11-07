@@ -1,7 +1,8 @@
 import { HeistEventSchema, type HeistEvent } from '../../contracts/src/events';
 import type { Attacker } from './attacker';
+import type { Guard } from './guard';
 import { failedVerdict, scoreRun, type RunScore, type Verdict } from './oracle';
-import { getPersona, PERSONAS, type Persona } from './personas';
+import { DEFAULT_PERSONA_IDS, getPersona, PERSONAS, type Persona } from './personas';
 import { runAttack, type AttackRecord, type Judge, type Ledger, type Target } from './run-attack';
 
 export type RunStatus = 'queued' | 'running' | 'finished' | 'failed';
@@ -17,6 +18,7 @@ export interface RunState {
   status: RunStatus;
   personaIds: string[];
   scripted: boolean;
+  guarded: boolean;
   startedAt: string;
   finishedAt?: string;
   items: StreamItem[];
@@ -31,11 +33,12 @@ export interface PreparedAttack {
   attacker: Attacker;
   ledger: Ledger;
   judge: Judge;
+  guard?: Guard;
 }
 
 export interface RunDeps {
   /** Readies one attack, including a fresh capture for its target order. */
-  prepareAttack(persona: Persona, scripted: boolean): Promise<PreparedAttack>;
+  prepareAttack(persona: Persona, scripted: boolean, guarded: boolean): Promise<PreparedAttack>;
   /** Called after each attack that ran, whatever its outcome. */
   afterAttack(persona: Persona, record: AttackRecord, events: HeistEvent[], scripted: boolean): Promise<void>;
   saveRun(run: RunState): Promise<void>;
@@ -51,7 +54,7 @@ export class RunRequestError extends Error {}
 
 export type RunListener = (item: StreamItem, index: number) => void;
 
-export interface StartOptions { personaIds?: string[]; scripted?: boolean }
+export interface StartOptions { personaIds?: string[]; scripted?: boolean; guarded?: boolean }
 
 export function createRunManager(deps: RunDeps, now: () => Date = () => new Date()) {
   const runs = new Map<string, RunState>();
@@ -75,7 +78,7 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
       publish(run, { kind: 'event', event: parsed });
     };
     try {
-      const prepared = await deps.prepareAttack(persona, run.scripted);
+      const prepared = await deps.prepareAttack(persona, run.scripted, run.guarded);
       const record = await runAttack({ runId: run.runId, attackId, persona, emit, ...prepared });
       run.records.push(record);
       await deps.afterAttack(persona, record, events, run.scripted);
@@ -127,17 +130,15 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
       try {
         personas = opts.personaIds?.length
           ? opts.personaIds.map(getPersona)
-          : PERSONAS.filter((p) => !scripted || p.script);
+          : scripted ? DEFAULT_PERSONA_IDS.map(getPersona) : PERSONAS;
       } catch (err) {
         throw new RunRequestError((err as Error).message);
       }
-      const unscripted = scripted ? personas.filter((p) => !p.script).map((p) => p.id) : [];
-      if (unscripted.length) throw new RunRequestError(`No script for: ${unscripted.join(', ')}. Pass scripted: false to use the LLM attacker.`);
 
       const startedAt = now();
       const run: RunState = {
         runId: `run-${startedAt.toISOString().replace(/[:.]/g, '-')}`, status: 'queued',
-        personaIds: personas.map((p) => p.id), scripted, startedAt: startedAt.toISOString(), items: [], verdicts: [], records: [],
+        personaIds: personas.map((p) => p.id), scripted, guarded: opts.guarded ?? false, startedAt: startedAt.toISOString(), items: [], verdicts: [], records: [],
       };
       runs.set(run.runId, run);
       publish(run, { kind: 'status', status: 'queued' });

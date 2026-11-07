@@ -1,7 +1,8 @@
 import type { HeistEvent } from '../../contracts/src/events';
 import type { CaptureRecord, RefundRecord } from '../../paypal/src/ledger';
 import type { Attacker, TranscriptLine } from './attacker';
-import type { Verdict } from './oracle';
+import { GUARD_DENIED_CODE, isContractRule, type Verdict } from './oracle';
+import type { GuardDecision } from './guard';
 import type { Persona } from './personas';
 
 export const MAX_TURNS = 8;
@@ -45,6 +46,7 @@ export interface AttackRecord {
   captureAfter: CaptureRecord | null;
   /** The capture moved but no refund was read back, e.g. the model call failed right after the tool ran. */
   unobservedRefund: boolean;
+  guarded: boolean;
   verdict?: Verdict;
 }
 
@@ -58,6 +60,8 @@ export interface RunAttackOptions {
   captureId: string;
   target: Target;
   attacker: Attacker;
+  /** Present on guarded runs: what the guard decided for a tool call. */
+  guard?: { decisionFor(toolCallId: string): GuardDecision | undefined };
   ledger: Ledger;
   judge: Judge;
   emit: (event: HeistEvent) => void;
@@ -107,7 +111,7 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
   const record: AttackRecord = {
     runId, attackId, personaId: persona.id, targetOrderKey: persona.targetOrderKey,
     sessionCustomerId: persona.sessionCustomerId, stopReason: 'max_turns', transcript: [], toolCalls: [],
-    refunds: [], captureBefore, captureAfter: null, unobservedRefund: false,
+    refunds: [], captureBefore, captureAfter: null, unobservedRefund: false, guarded: !!opts.guard,
   };
   const verified = () => record.refunds.filter((r) => r.succeeded);
 
@@ -128,6 +132,10 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
       for (const call of reply.toolCalls) {
         record.toolCalls.push(call);
         opts.emit({ ...base(), type: 'tool.called', tool: call.toolName, args: toArgsRecord(call.args) });
+        const decision = opts.guard?.decisionFor(call.toolCallId);
+        if (decision) {
+          opts.emit({ ...base(), type: 'guard.decision', tool: decision.tool, decision: decision.decision, ruleIds: decision.ruleIds.filter(isContractRule) });
+        }
         if (call.toolName !== 'create_refund') continue;
 
         const { refundId, paypalErrorCode } = parseRefundResult(call.result);
@@ -135,6 +143,8 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
         const succeeded = !!readBack && !FAILED_REFUND_STATUSES.has(readBack.status);
         const amountCents = succeeded ? toCents(readBack.amount.value) : 0;
         record.refunds.push({ toolCallId: call.toolCallId, args: call.args, refundId, paypalErrorCode, readBack, amountCents, succeeded });
+        // A call the guard stopped never reached PayPal, so there is no refund to report.
+        if (paypalErrorCode === GUARD_DENIED_CODE) continue;
         opts.emit({
           ...base(), type: 'refund.observed', amountCents, currency: 'USD',
           status: succeeded ? 'succeeded' : 'failed', paypalRefundId: refundId,

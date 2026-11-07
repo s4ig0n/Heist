@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { HeistEventSchema } from '../../contracts/src/events';
 import { createScriptedAttacker } from './attacker';
 import { evaluate } from './oracle';
+import { PERSONAS } from './personas';
 import { createRunManager, RunConflictError, RunRequestError, type RunDeps, type RunState, type StreamItem } from './run-manager';
-import { createRunStreamResponse, formatItem, parseLastEventId } from './sse';
+import { createReplayResponse, createRunStreamResponse, formatItem, parseLastEventId, replayDelayMs } from './sse';
 
 const merchant = {
   customers: [],
@@ -66,6 +67,17 @@ describe('run manager', () => {
     expect(k.slice(-2)).toEqual(['summary', 'status:finished']);
   });
 
+  it('passes the guarded flag through, off unless asked for', async () => {
+    const seen: boolean[] = [];
+    const base = fakeDeps().deps;
+    const manager = createRunManager({ ...base, prepareAttack: (p, s, g) => { seen.push(g); return base.prepareAttack(p, s, g); } });
+    expect(manager.start({ personaIds: ['time-traveler'] }).guarded).toBe(false);
+    await manager.idle();
+    expect(manager.start({ personaIds: ['time-traveler'], guarded: true }).guarded).toBe(true);
+    await manager.idle();
+    expect(seen).toEqual([false, true]);
+  });
+
   it('every stream event validates against the contract', async () => {
     const manager = createRunManager(fakeDeps().deps);
     const run = manager.start();
@@ -82,17 +94,16 @@ describe('run manager', () => {
     await manager.idle();
   });
 
-  it('rejects unknown personas, and unscripted ones in scripted mode, before anything runs', () => {
+  it('rejects unknown personas before anything runs', () => {
     const manager = createRunManager(fakeDeps().deps);
     expect(() => manager.start({ personaIds: ['nope'] })).toThrow(RunRequestError);
-    expect(() => manager.start({ personaIds: ['neighbor'] })).toThrow(/No script for: neighbor/);
     expect(manager.list()).toEqual([]);
   });
 
   it('without scripts it takes every persona', async () => {
     const manager = createRunManager(fakeDeps().deps);
     const run = manager.start({ scripted: false });
-    expect(run.personaIds).toHaveLength(6);
+    expect(run.personaIds).toHaveLength(PERSONAS.length);
     await manager.idle();
   });
 
@@ -204,5 +215,34 @@ describe('SSE', () => {
 
   it('an unknown run is null', async () => {
     expect(await createRunStreamResponse(createRunManager(fakeDeps().deps), 'nope')).toBeNull();
+  });
+});
+
+describe('replay', () => {
+  const event = (timestamp: string, n: number): StreamItem => ({ kind: 'event', event: { type: 'attack.started', eventId: `e${n}`, timestamp } as any });
+  const items: StreamItem[] = [
+    { kind: 'status', status: 'running' },
+    event('2026-11-07T00:00:00.000Z', 1),
+    event('2026-11-07T00:00:00.500Z', 2),
+    event('2026-11-07T00:03:00.000Z', 3),
+    { kind: 'status', status: 'finished' },
+  ];
+
+  it('keeps short gaps and caps long ones, scaled by speed', () => {
+    expect(replayDelayMs(items, 2, 1)).toBe(500);
+    expect(replayDelayMs(items, 3, 1)).toBe(2000);
+    expect(replayDelayMs(items, 3, 4)).toBe(500);
+    expect(replayDelayMs(items, 1, 1)).toBe(300); // nothing before it to measure from
+    expect(replayDelayMs(items, 4, 1)).toBe(300);
+  });
+  it('plays everything in order, then says it finished', async () => {
+    const text = await createReplayResponse({ items }, { speed: 1000 }).text();
+    expect([...text.matchAll(/^id: (\d+)/gm)].map((m) => Number(m[1]))).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(text.trimEnd().endsWith('event: replay.finished\ndata: {}')).toBe(true);
+  });
+  it('resumes from Last-Event-ID, and 204s once it has all been seen', async () => {
+    const text = await createReplayResponse({ items }, { speed: 1000, lastEventId: 3 }).text();
+    expect([...text.matchAll(/^id: (\d+)/gm)].map((m) => Number(m[1]))).toEqual([4, 5, 6]);
+    expect(createReplayResponse({ items }, { lastEventId: 6 }).status).toBe(204);
   });
 });

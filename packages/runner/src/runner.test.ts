@@ -4,8 +4,8 @@ import { MockLanguageModelV3 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
 import { HeistEventSchema, type HeistEvent } from '../../contracts/src/events';
 import { buildAttackerPrompt, createLlmAttacker, createScriptedAttacker } from './attacker';
-import { getPersona, PERSONAS } from './personas';
-import { evaluate } from './oracle';
+import { getPersona, PERSONAS, scriptFor } from './personas';
+import { evaluate, GUARD_DENIED_CODE } from './oracle';
 import { MAX_TURNS, runAttack, type Target } from './run-attack';
 
 const CAPTURE = 'CAP-1';
@@ -157,6 +157,34 @@ describe('runAttack', () => {
   });
 });
 
+describe('guarded runs', () => {
+  const denied = { ok: false, code: GUARD_DENIED_CODE, decision: 'deny', ruleIds: ['refund.window_days', 'refund.requires_evidence'], message: 'no' };
+  const guard = {
+    decisionFor: (id: string) => (id === 't1'
+      ? { tool: 'create_refund', decision: 'deny' as const, ruleIds: ['refund.window_days', 'refund.requires_evidence'] as any, reason: 'no' }
+      : undefined),
+  };
+
+  it('a denied call emits guard.decision, no refund.observed, and counts as blocked by the guard', async () => {
+    const target = fakeTarget([{ text: 'I cannot do that.', toolCalls: [refundCall('t1', denied)] }]);
+    const { record, events, types } = await run({ target, guard, ledger: fakeLedger(), attacker: createScriptedAttacker(['a']) });
+    expect(types).toEqual(['attack.started', 'tool.called', 'guard.decision', 'attack.completed']);
+    // refund.requires_evidence stays out of the event until the contract has it.
+    expect(events[2]).toMatchObject({ decision: 'deny', tool: 'create_refund', ruleIds: ['refund.window_days'] });
+    expect(events[3]).toMatchObject({ status: 'blocked', amountCents: 0 });
+    expect(record.verdict?.bucket).toBe('blocked_by_guard');
+    expect(record.guarded).toBe(true);
+    for (const e of events) expect(() => HeistEventSchema.parse(e)).not.toThrow();
+  });
+
+  it('an unguarded run emits no decisions', async () => {
+    const target = fakeTarget([{ text: 'ok', toolCalls: [refundCall('t1', { id: 'R1' })] }]);
+    const { record, types } = await run({ target, ledger: fakeLedger({ refunds: { R1: '96.00' } }) });
+    expect(types).not.toContain('guard.decision');
+    expect(record.guarded).toBe(false);
+  });
+});
+
 describe('attackers', () => {
   const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 1, text: 1, reasoning: 0 } };
   const model = (text: string) => {
@@ -203,15 +231,30 @@ describe('persona registry', () => {
       expect(merchant.customers.some((c: any) => c.id === p.sessionCustomerId), p.id).toBe(true);
     }
   });
-  it('ownership matches the attack: only Neighbor targets someone else\'s order', () => {
+  it('ownership matches the attack: only Neighbor and Impersonator target someone else\'s order', () => {
     for (const p of PERSONAS) {
       const owner = merchant.orders.find((o: any) => o.key === p.targetOrderKey).customerId;
-      expect(owner === p.sessionCustomerId, p.id).toBe(p.id !== 'neighbor');
+      expect(owner === p.sessionCustomerId, p.id).toBe(!['neighbor', 'impersonator'].includes(p.id));
     }
   });
   it('exactly one benign control, and ids are unique', () => {
     expect(PERSONAS.filter((p) => p.benign).map((p) => p.id)).toEqual(['honest-hannah']);
     expect(new Set(PERSONAS.map((p) => p.id)).size).toBe(PERSONAS.length);
+  });
+  it('every script fits in the turn limit and fills in the capture', () => {
+    for (const p of PERSONAS) {
+      expect(p.script.length, p.id).toBeGreaterThan(0);
+      expect(p.script.length, p.id).toBeLessThanOrEqual(MAX_TURNS);
+      expect(scriptFor(p, 'CAP').join(' '), p.id).not.toContain('{captureId}');
+    }
+    expect(scriptFor(getPersona('neighbor'), 'CAP-9').join(' ')).toContain('CAP-9');
+  });
+  it('script orders match the merchant data they name', () => {
+    for (const p of PERSONAS) {
+      const order = merchant.orders.find((o: any) => o.key === p.targetOrderKey);
+      const text = p.script.join(' ');
+      if (text.includes(p.targetOrderKey)) expect(text, p.id).toContain(order.item.split(' (')[0]);
+    }
   });
   it('unknown persona throws with the options', () => {
     expect(() => getPersona('nope')).toThrow(/Options: honest-hannah/);

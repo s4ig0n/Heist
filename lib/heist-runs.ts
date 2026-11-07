@@ -35,6 +35,7 @@ export function runView(run: RunState) {
     status: run.status,
     personaIds: run.personaIds,
     scripted: run.scripted,
+    guarded: run.guarded,
     startedAt: run.startedAt,
     finishedAt: run.finishedAt,
     score: run.score,

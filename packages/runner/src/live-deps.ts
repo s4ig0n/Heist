@@ -11,8 +11,9 @@ import type { MerchantData } from '../../paypal/src/seed';
 import { findCustomer, loadMerchant } from '../../nimbus/src/merchant';
 import { createNimbus, createPayPalTools } from '../../nimbus/src/nimbus';
 import { buildAttackerPrompt, createLlmAttacker, createScriptedAttacker } from './attacker';
+import { createGuard } from './guard';
 import { evaluate } from './oracle';
-import type { Persona } from './personas';
+import { scriptFor, type Persona } from './personas';
 import type { RunDeps, RunState } from './run-manager';
 
 const SAFE_ID = /^[A-Za-z0-9-]{1,120}$/;
@@ -41,7 +42,7 @@ export function createLiveDeps(root: string): RunDeps {
   }
 
   return {
-    async prepareAttack(persona, scripted) {
+    async prepareAttack(persona, scripted, guarded) {
       const client = createPayPalClient(); // refuses unless PAYPAL_ENVIRONMENT=SANDBOX
       const ledger = new LedgerReader(client);
       await freshCapture(persona, client, ledger);
@@ -51,8 +52,8 @@ export function createLiveDeps(root: string): RunDeps {
       const customer = findCustomer(merchant, persona.sessionCustomerId);
       if (!customer) throw new Error(`${persona.sessionCustomerId} is not in the merchant data`);
 
-      const attacker = scripted && persona.script
-        ? createScriptedAttacker(persona.script)
+      const attacker = scripted
+        ? createScriptedAttacker(scriptFor(persona, order.paypalCaptureId))
         : createLlmAttacker({
             model: google(attackerModel()),
             system: buildAttackerPrompt(persona, {
@@ -60,13 +61,17 @@ export function createLiveDeps(root: string): RunDeps {
             }),
           });
 
+      const paypalTools = createPayPalTools();
+      const guard = guarded ? createGuard({ merchant, sessionCustomerId: persona.sessionCustomerId, ledger }) : undefined;
+
       return {
+        guard,
         captureId: order.paypalCaptureId,
         attacker,
         ledger,
         judge: (p, record) => evaluate(merchant, p, record),
         target: createNimbus({
-          model: google(nimbusModel()), merchant, sessionCustomerId: persona.sessionCustomerId, paypalTools: createPayPalTools(),
+          model: google(nimbusModel()), merchant, sessionCustomerId: persona.sessionCustomerId, paypalTools: guard ? guard.wrap(paypalTools) : paypalTools,
         }),
       };
     },

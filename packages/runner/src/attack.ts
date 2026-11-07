@@ -1,6 +1,7 @@
 // A run against Nimbus in the REAL sandbox, without the web app.
-// `pnpm attack -- --persona time-traveler --scripted`. Leave out --persona for every scripted persona.
+// `pnpm attack -- --persona time-traveler --scripted`. --persona takes a comma-separated list. Leave it out for the short default run.
 // Issues real sandbox refunds. Target orders get a fresh capture first if theirs is spent.
+// --guard puts the policy guard in front of create_refund.
 // --scripted uses the personas' fixed lines. Without it the attacker is an LLM, which uses more quota.
 import { fileURLToPath } from 'node:url';
 import { createLiveDeps } from './live-deps';
@@ -10,7 +11,7 @@ const args = process.argv.slice(2);
 const persona = args.includes('--persona') ? args[args.indexOf('--persona') + 1] : undefined;
 
 const manager = createRunManager(createLiveDeps(fileURLToPath(new URL('../../../', import.meta.url))));
-const run = manager.start({ personaIds: persona ? [persona] : undefined, scripted: args.includes('--scripted') });
+const run = manager.start({ personaIds: persona?.split(','), scripted: args.includes('--scripted'), guarded: args.includes('--guard') });
 
 manager.subscribe(run.runId, (item) => {
   if (item.kind === 'event') console.log(`[${item.event.type}] ${JSON.stringify(item.event).slice(0, 180)}`);

@@ -1,7 +1,12 @@
-import { isOver, type RunManager, type StreamItem } from './run-manager';
+import { isOver, type RunManager, type RunState, type StreamItem } from './run-manager';
 
 const encoder = new TextEncoder();
 export const HEARTBEAT_MS = 15_000;
+const STREAM_HEADERS = {
+  'Content-Type': 'text/event-stream; charset=utf-8',
+  'Cache-Control': 'no-cache, no-transform',
+  'X-Accel-Buffering': 'no',
+};
 
 /**
  * Contract events go out as plain `data:` messages, the same as the mock stream, so the same client code reads
@@ -66,11 +71,47 @@ export async function createRunStreamResponse(
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      'X-Accel-Buffering': 'no',
+  return new Response(stream, { headers: STREAM_HEADERS });
+}
+
+const MAX_REPLAY_GAP_MS = 2_000;
+const STATUS_GAP_MS = 300;
+
+/** How long to wait before an item: the real gap between events, capped, so a slow model call doesn't stall a demo. */
+export function replayDelayMs(items: StreamItem[], index: number, speed: number): number {
+  const item = items[index];
+  if (item.kind !== 'event') return STATUS_GAP_MS / speed;
+  let previous: string | undefined;
+  for (let i = index - 1; i >= 0 && !previous; i--) {
+    const earlier = items[i];
+    if (earlier.kind === 'event') previous = earlier.event.timestamp;
+  }
+  if (!previous) return STATUS_GAP_MS / speed;
+  const gap = new Date(item.event.timestamp).getTime() - new Date(previous).getTime();
+  return Math.min(Math.max(gap, 0), MAX_REPLAY_GAP_MS) / speed;
+}
+
+/** Plays a finished run back at its recorded pace. A browser that has seen it all gets 204. */
+export function createReplayResponse(
+  run: Pick<RunState, 'items'>,
+  opts: { speed?: number; lastEventId?: number; signal?: AbortSignal } = {},
+): Response {
+  const from = opts.lastEventId ?? 0;
+  if (from >= run.items.length + 1) return new Response(null, { status: 204 });
+  const speed = opts.speed ?? 1;
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      for (let i = from; i < run.items.length; i++) {
+        await new Promise<void>((resolve) => setTimeout(resolve, replayDelayMs(run.items, i, speed)));
+        if (opts.signal?.aborted) break;
+        controller.enqueue(encoder.encode(formatItem(run.items[i], i)));
+      }
+      if (!opts.signal?.aborted) {
+        controller.enqueue(encoder.encode(`id: ${run.items.length + 1}\nevent: replay.finished\ndata: {}\n\n`));
+      }
+      controller.close();
     },
   });
+  return new Response(stream, { headers: STREAM_HEADERS });
 }

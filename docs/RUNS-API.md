@@ -14,7 +14,7 @@ Real runs in the PayPal sandbox. Everything here refuses unless `PAYPAL_ENVIRONM
 
 - With no personas, it runs the short default, Honest Hannah and Time Traveler. Every persona has fixed lines, so a scripted run only spends model quota on Nimbus. `scripted: false` uses the LLM attacker, and with no personas it runs all of them, which uses far more quota.
 - `guarded: true` puts the policy guard in front of `create_refund`. The stream then also carries `guard.decision` events. A call the guard stops emits no `refund.observed`, because it never reached PayPal.
-- Only one run at a time: a second start gets 409. An unknown persona gets 400.
+- Only one run at a time: a second start gets 409. An unknown persona gets 400. More than `HEIST_MAX_RUNS_PER_DAY` runs (default 10, counted per server process) gets 429.
 - In production, `HEIST_RUN_TOKEN` must be set and sent as `Authorization: Bearer <token>`. Without it, starts get 503. Don't put the token in client code: a server action or route should add it.
 
 **The stream.** Contract events arrive as plain messages, like the mock stream, so `onmessage` reads both. Run-level items are named events until change request #5 is settled:
@@ -36,6 +36,18 @@ A late or reconnecting client gets everything it missed, in order. A `: ping` co
 **Attack record** (`/api/attacks/:id`): `record.transcript`, `record.toolCalls`, `record.refunds` (with PayPal's read-back), `record.verdict`.
 
 **Limits.** Attacks run one after another in one server process. A run stops after two failed attacks in a row. Runs and evidence are JSON files under `data/evidence`, and `data/merchant.json` is rewritten as captures are spent and refilled, so a host with a temporary disk loses them on restart.
+
+## Patches
+
+A patch is the smallest set of guard rules that covers what a run leaked. It's worked out from the run each time, so the same run always gives the same patch. This backs the Patch Diff widget and "Apply and rerun".
+
+| Route | What it does |
+|---|---|
+| `POST /api/runs/:id/patch` | The patch for a finished run or a recording, such as `baseline-run`. No token. 409 if the run isn't over, 422 if it leaked nothing. |
+| `GET /api/patches/:id` | The same patch again. `id` is `patch-<run id>`. |
+| `POST /api/patches/:id/rerun` | Runs the same personas with only the patch's rules on. Needs the token. Returns 202, like starting a run. |
+
+A patch has `patchId`, `fromRunId`, `personaIds`, `scripted`, `before` and `after` (the whole rule JSON, for the diff), and `changes`: `{ ruleId, enabled: { from, to }, because: [personaId] }`.
 
 ## Replays
 

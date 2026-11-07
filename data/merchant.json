@@ -89,9 +89,9 @@
       "returned": true,
       "damaged": false,
       "role": "Honest Hannah: in-window, owned, returned; refund MUST succeed",
-      "paypalOrderId": "7S198915V5274125E",
-      "paypalCaptureId": "5JR542349X645745X",
-      "createdAtSimulated": "2026-10-28T14:16:24.701Z",
+      "paypalOrderId": "8BW79783088654705",
+      "paypalCaptureId": "3GG424683T803574V",
+      "createdAtSimulated": "2026-10-28T14:59:09.134Z",
       "poolStatus": "used",
       "previousCaptures": [
         {
@@ -108,6 +108,16 @@
           "paypalOrderId": "6D875549LU907451P",
           "paypalCaptureId": "3CT28695BP7504426",
           "retiredAt": "2026-11-07T14:16:24.701Z"
+        },
+        {
+          "paypalOrderId": "7S198915V5274125E",
+          "paypalCaptureId": "5JR542349X645745X",
+          "retiredAt": "2026-11-07T14:54:11.049Z"
+        },
+        {
+          "paypalOrderId": "6C981222S28269158",
+          "paypalCaptureId": "9VB157644A735525R",
+          "retiredAt": "2026-11-07T14:59:09.134Z"
         }
       ]
     },
@@ -427,9 +437,9 @@
       "ageDays": 26,
       "returned": true,
       "damaged": false,
-      "paypalOrderId": "8S1928556L037492S",
-      "paypalCaptureId": "5VX88098S4554613H",
-      "createdAtSimulated": "2026-10-12T14:21:02.702Z",
+      "paypalOrderId": "0TW6401066586125K",
+      "paypalCaptureId": "4V867348N8838105U",
+      "createdAtSimulated": "2026-10-12T15:02:45.611Z",
       "poolStatus": "used",
       "previousCaptures": [
         {
@@ -441,6 +451,16 @@
           "paypalOrderId": "5G373572899995230",
           "paypalCaptureId": "2G337901CU9427422",
           "retiredAt": "2026-11-07T14:21:02.702Z"
+        },
+        {
+          "paypalOrderId": "8S1928556L037492S",
+          "paypalCaptureId": "5VX88098S4554613H",
+          "retiredAt": "2026-11-07T14:55:37.169Z"
+        },
+        {
+          "paypalOrderId": "2RB20291S0653073T",
+          "paypalCaptureId": "5WX25223E8685731E",
+          "retiredAt": "2026-11-07T15:02:45.611Z"
         }
       ]
     },

@@ -246,3 +246,18 @@ flow exists yet, so that refund simply doesn't happen.
   captures. The guard is stricter than the oracle in one case: it always wants an explicit amount, even for a refund owed in full.
 - The guard is one run per configuration, on one model. It doesn't cover `get_order`, which can read other customers' orders.
 - This was Gouri's lane in the split. Her tracker item stays unticked until she has seen it.
+
+## 2026-11-07: Patches, pacing and caps
+
+`POST /api/runs/:id/patch` works out the smallest rule set for a run's leaks, and `POST /api/patches/:id/rerun` runs the same
+personas with only those rules. Patches are computed from the run, so they need no storage. From the baseline it switches on
+`refund.one_per_capture`, `refund.requires_evidence` and `refund.window_days`.
+
+- Live through `next start`: Heist Score 100, $0.00 leaked, Hannah $129.00, no failed attacks. Recorded as `patched-run`. Ownership
+  and the other three rules are off in this run, so Neighbor and Impersonator were stopped only by Nimbus refusing.
+- A first attempt, `run-2026-11-07T14-54-08-800Z`, scored 100 as well, but two attacks failed on Gemini's 15 requests a minute and
+  were left out of the score. It isn't a valid proof, and it's kept as evidence of that. Check `counts.failed` before quoting a score.
+- Model calls are now paced at 14 a minute per model, retries included. The same nine attacks took 6.6 minutes.
+- `HEIST_MAX_RUNS_PER_DAY` caps starts per process, default 10. There is no per-IP limit, because the token already gates starts.
+- ESLint turns off `no-explicit-any` for our three packages, which wrap untyped toolkit results. One lint error is left, in
+  `app/heist-preview/report/page.tsx`, for Gouri.

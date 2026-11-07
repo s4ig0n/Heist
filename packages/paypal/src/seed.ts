@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { ApiError, CheckoutPaymentIntent, OrdersController } from '@paypal/paypal-server-sdk';
+import { ApiError, OrdersController } from '@paypal/paypal-server-sdk';
+import { captureOrder } from './capture-order';
 import { createPayPalClient } from './client';
-import { paypalLimiter } from './limiter';
 import { paypalRequestId } from './idempotency';
 
 // Merchant "database" for now: heist-local/data/merchant.json
@@ -94,36 +94,15 @@ async function main() {
   console.log(`Pool: ${data.orders.length} already seeded, ${todo.length} to create (~${Math.ceil(todo.length / 35)} min max).`);
 
   for (const seed of todo) {
-    const { result } = await paypalLimiter.run(() =>
-      orders.createOrder({
-        paypalRequestId: paypalRequestId(SEED_RUN, 'order', seed.key),
-        prefer: 'return=representation',
-        body: {
-          intent: CheckoutPaymentIntent.Capture,
-          purchaseUnits: [{
-            referenceId: seed.key,
-            description: `Nimbus Outfitters: ${seed.item}`,
-            amount: { currencyCode: 'USD', value: seed.amount },
-          }],
-          paymentSource: {
-            card: { name: 'Test Buyer', number: '4111111111111111', expiry: '2030-12', securityCode: '123' },
-          },
-        },
-      }),
-    );
-    const capture = result.purchaseUnits?.[0]?.payments?.captures?.[0];
-    if (!result.id || !capture?.id || capture.status !== 'COMPLETED') {
-      throw new Error(`Seed ${seed.key} did not capture: order=${result.id} capture=${capture?.id} status=${capture?.status}`);
-    }
+    const capture = await captureOrder(orders, paypalRequestId(SEED_RUN, 'order', seed.key), seed);
     data.orders.push({
       ...seed,
-      paypalOrderId: result.id,
-      paypalCaptureId: capture.id,
+      ...capture,
       createdAtSimulated: new Date(Date.now() - seed.ageDays * 86_400_000).toISOString(),
       poolStatus: 'available',
     });
     save(data); // after every order, so a crash resumes cleanly
-    console.log(`  ✓ ${seed.key.padEnd(15)} $${seed.amount.padStart(6)}  ${seed.ageDays}d  capture=${capture.id}`);
+    console.log(`  ✓ ${seed.key.padEnd(15)} $${seed.amount.padStart(6)}  ${seed.ageDays}d  capture=${capture.paypalCaptureId}`);
   }
 
   const total = data.orders.reduce((sum, o) => sum + Number(o.amount), 0);

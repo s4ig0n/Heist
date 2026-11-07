@@ -3,7 +3,8 @@ import { HeistEventSchema } from '../../contracts/src/events';
 import { createScriptedAttacker } from './attacker';
 import { evaluate } from './oracle';
 import { PERSONAS } from './personas';
-import { createRunManager, RunConflictError, RunRequestError, type RunDeps, type RunState, type StreamItem } from './run-manager';
+import { DEFAULT_GUARD_RULES } from './guard';
+import { createRunManager, RunConflictError, RunLimitError, RunRequestError, type RunDeps, type RunState, type StreamItem } from './run-manager';
 import { createReplayResponse, createRunStreamResponse, formatItem, parseLastEventId, replayDelayMs } from './sse';
 
 const merchant = {
@@ -68,14 +69,36 @@ describe('run manager', () => {
   });
 
   it('passes the guarded flag through, off unless asked for', async () => {
-    const seen: boolean[] = [];
+    const seen: (object | null)[] = [];
     const base = fakeDeps().deps;
     const manager = createRunManager({ ...base, prepareAttack: (p, s, g) => { seen.push(g); return base.prepareAttack(p, s, g); } });
     expect(manager.start({ personaIds: ['time-traveler'] }).guarded).toBe(false);
     await manager.idle();
     expect(manager.start({ personaIds: ['time-traveler'], guarded: true }).guarded).toBe(true);
     await manager.idle();
-    expect(seen).toEqual([false, true]);
+    expect(seen).toEqual([null, DEFAULT_GUARD_RULES]);
+  });
+
+  it('a patch run uses the patch rules, and says which patch', async () => {
+    const seen: (object | null)[] = [];
+    const base = fakeDeps().deps;
+    const manager = createRunManager({ ...base, prepareAttack: (p, s, g) => { seen.push(g); return base.prepareAttack(p, s, g); } });
+    const guardRules = structuredClone(DEFAULT_GUARD_RULES);
+    const run = manager.start({ personaIds: ['time-traveler'], guardRules, patchId: 'patch-x' });
+    await manager.idle();
+    expect(seen).toEqual([guardRules]);
+    expect(run).toMatchObject({ guarded: true, patchId: 'patch-x' });
+  });
+
+  it('stops starting runs at the daily limit, and starts again the next day', async () => {
+    let today = '2026-11-07T10:00:00.000Z';
+    const manager = createRunManager(fakeDeps().deps, () => new Date(today), { maxRunsPerDay: 1 });
+    manager.start({ personaIds: ['time-traveler'] });
+    await manager.idle();
+    expect(() => manager.start({ personaIds: ['time-traveler'] })).toThrow(RunLimitError);
+    today = '2026-11-08T00:00:01.000Z';
+    expect(() => manager.start({ personaIds: ['time-traveler'] })).not.toThrow();
+    await manager.idle();
   });
 
   it('every stream event validates against the contract', async () => {

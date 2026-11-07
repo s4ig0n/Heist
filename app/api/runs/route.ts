@@ -1,8 +1,9 @@
-import { getRunManager, refuseRunStart, runView } from "@/lib/heist-runs";
 import {
-  RunConflictError,
-  RunRequestError,
-} from "@/packages/runner/src/run-manager";
+  getRunManager,
+  refuseRunStart,
+  runErrorResponse,
+  runView,
+} from "@/lib/heist-runs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,12 +47,6 @@ export async function POST(request: Request) {
     });
     return Response.json(runView(run), { status: 202 });
   } catch (error) {
-    if (error instanceof RunConflictError) {
-      return Response.json({ error: error.message }, { status: 409 });
-    }
-    if (error instanceof RunRequestError) {
-      return Response.json({ error: error.message }, { status: 400 });
-    }
-    throw error;
+    return runErrorResponse(error);
   }
 }

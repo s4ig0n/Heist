@@ -1,6 +1,6 @@
 import { HeistEventSchema, type HeistEvent } from '../../contracts/src/events';
 import type { Attacker } from './attacker';
-import type { Guard } from './guard';
+import { DEFAULT_GUARD_RULES, type Guard, type GuardConfig } from './guard';
 import { failedVerdict, scoreRun, type RunScore, type Verdict } from './oracle';
 import { DEFAULT_PERSONA_IDS, getPersona, PERSONAS, type Persona } from './personas';
 import { runAttack, type AttackRecord, type Judge, type Ledger, type Target } from './run-attack';
@@ -19,6 +19,8 @@ export interface RunState {
   personaIds: string[];
   scripted: boolean;
   guarded: boolean;
+  guardRules: GuardConfig | null;
+  patchId?: string;
   startedAt: string;
   finishedAt?: string;
   items: StreamItem[];
@@ -38,7 +40,7 @@ export interface PreparedAttack {
 
 export interface RunDeps {
   /** Readies one attack, including a fresh capture for its target order. */
-  prepareAttack(persona: Persona, scripted: boolean, guarded: boolean): Promise<PreparedAttack>;
+  prepareAttack(persona: Persona, scripted: boolean, guardRules: GuardConfig | null): Promise<PreparedAttack>;
   /** Called after each attack that ran, whatever its outcome. */
   afterAttack(persona: Persona, record: AttackRecord, events: HeistEvent[], scripted: boolean): Promise<void>;
   saveRun(run: RunState): Promise<void>;
@@ -51,12 +53,19 @@ const MAX_CONSECUTIVE_FAILURES = 2;
 
 export class RunConflictError extends Error {}
 export class RunRequestError extends Error {}
+export class RunLimitError extends Error {}
 
 export type RunListener = (item: StreamItem, index: number) => void;
 
-export interface StartOptions { personaIds?: string[]; scripted?: boolean; guarded?: boolean }
+export interface StartOptions {
+  personaIds?: string[];
+  scripted?: boolean;
+  guarded?: boolean; // the full rule set
+  guardRules?: GuardConfig; // a specific rule set, such as a patch
+  patchId?: string;
+}
 
-export function createRunManager(deps: RunDeps, now: () => Date = () => new Date()) {
+export function createRunManager(deps: RunDeps, now: () => Date = () => new Date(), limits: { maxRunsPerDay?: number } = {}) {
   const runs = new Map<string, RunState>();
   const listeners = new Map<string, Set<RunListener>>();
   let active: Promise<void> | null = null;
@@ -78,7 +87,7 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
       publish(run, { kind: 'event', event: parsed });
     };
     try {
-      const prepared = await deps.prepareAttack(persona, run.scripted, run.guarded);
+      const prepared = await deps.prepareAttack(persona, run.scripted, run.guardRules);
       const record = await runAttack({ runId: run.runId, attackId, persona, emit, ...prepared });
       run.records.push(record);
       await deps.afterAttack(persona, record, events, run.scripted);
@@ -125,6 +134,11 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
     /** Starts a run in the background. One at a time: runs spend real sandbox captures and model quota. */
     start(opts: StartOptions = {}): RunState {
       if (active) throw new RunConflictError('A run is already in progress');
+      const today = now().toISOString().slice(0, 10);
+      const startedToday = [...runs.values()].filter((r) => r.startedAt.startsWith(today)).length;
+      if (limits.maxRunsPerDay !== undefined && startedToday >= limits.maxRunsPerDay) {
+        throw new RunLimitError(`The limit of ${limits.maxRunsPerDay} runs a day has been reached`);
+      }
       const scripted = opts.scripted ?? true;
       let personas: Persona[];
       try {
@@ -135,10 +149,11 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
         throw new RunRequestError((err as Error).message);
       }
 
+      const guardRules = opts.guardRules ?? (opts.guarded ? DEFAULT_GUARD_RULES : null);
       const startedAt = now();
       const run: RunState = {
         runId: `run-${startedAt.toISOString().replace(/[:.]/g, '-')}`, status: 'queued',
-        personaIds: personas.map((p) => p.id), scripted, guarded: opts.guarded ?? false, startedAt: startedAt.toISOString(), items: [], verdicts: [], records: [],
+        personaIds: personas.map((p) => p.id), scripted, guarded: !!guardRules, guardRules, patchId: opts.patchId, startedAt: startedAt.toISOString(), items: [], verdicts: [], records: [],
       };
       runs.set(run.runId, run);
       publish(run, { kind: 'status', status: 'queued' });

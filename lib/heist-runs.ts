@@ -1,6 +1,12 @@
+import { loadReplay } from "@/lib/heist-replays";
 import { createLiveDeps } from "@/packages/runner/src/live-deps";
+import { generatePatch } from "@/packages/runner/src/patch";
 import {
   createRunManager,
+  isOver,
+  RunConflictError,
+  RunLimitError,
+  RunRequestError,
   type RunManager,
   type RunState,
 } from "@/packages/runner/src/run-manager";
@@ -10,7 +16,9 @@ import {
 const store = globalThis as typeof globalThis & { heistRuns?: RunManager };
 
 export function getRunManager(): RunManager {
-  store.heistRuns ??= createRunManager(createLiveDeps(process.cwd()));
+  store.heistRuns ??= createRunManager(createLiveDeps(process.cwd()), undefined, {
+    maxRunsPerDay: Number(process.env.HEIST_MAX_RUNS_PER_DAY) || 10,
+  });
   return store.heistRuns;
 }
 
@@ -36,6 +44,7 @@ export function runView(run: RunState) {
     personaIds: run.personaIds,
     scripted: run.scripted,
     guarded: run.guarded,
+    patchId: run.patchId,
     startedAt: run.startedAt,
     finishedAt: run.finishedAt,
     score: run.score,
@@ -43,4 +52,39 @@ export function runView(run: RunState) {
     attackIds: run.records.map((record) => record.attackId),
     streamUrl: `/api/runs/${run.runId}/stream`,
   };
+}
+
+export function runErrorResponse(error: unknown): Response {
+  if (error instanceof RunConflictError) {
+    return Response.json({ error: error.message }, { status: 409 });
+  }
+  if (error instanceof RunRequestError) {
+    return Response.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof RunLimitError) {
+    return Response.json({ error: error.message }, { status: 429 });
+  }
+  throw error;
+}
+
+/** A run's own id, or the name of a recording. */
+async function findRun(id: string): Promise<RunState | null> {
+  return (await getRunManager().get(id)) ?? (await loadReplay(id));
+}
+
+export async function findPatch(id: string) {
+  const run = await findRun(id);
+  return run && isOver(run.status) ? generatePatch(run, id) : null;
+}
+
+export async function loadPatch(id: string): Promise<Response> {
+  const run = await findRun(id);
+  if (!run) return Response.json({ error: "Run not found" }, { status: 404 });
+  if (!isOver(run.status)) {
+    return Response.json({ error: "The run has not finished" }, { status: 409 });
+  }
+  const patch = generatePatch(run, id);
+  return patch
+    ? Response.json(patch)
+    : Response.json({ error: "The run leaked nothing, so there is nothing to patch" }, { status: 422 });
 }

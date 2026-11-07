@@ -10,10 +10,11 @@ Real runs in the PayPal sandbox. Everything here refuses unless `PAYPAL_ENVIRONM
 | `GET /api/runs/:id/stream` | Server-sent events for the run. |
 | `GET /api/attacks/:id` | One attack's full record, including the transcript. |
 
-**Starting a run.** The body is optional: `{ "personas": ["time-traveler"], "scripted": true }`.
+**Starting a run.** The body is optional: `{ "personas": ["time-traveler"], "scripted": true, "guarded": true }`.
 
-- With no personas, it runs every persona that has a script. `scripted: false` uses the LLM attacker, and with no personas it runs all of them. That uses far more model quota.
-- Only one run at a time: a second start gets 409. An unknown persona, or an unscripted one in scripted mode, gets 400.
+- With no personas, it runs the short default, Honest Hannah and Time Traveler. Every persona has fixed lines, so a scripted run only spends model quota on Nimbus. `scripted: false` uses the LLM attacker, and with no personas it runs all of them, which uses far more quota.
+- `guarded: true` puts the policy guard in front of `create_refund`. The stream then also carries `guard.decision` events. A call the guard stops emits no `refund.observed`, because it never reached PayPal.
+- Only one run at a time: a second start gets 409. An unknown persona gets 400.
 - In production, `HEIST_RUN_TOKEN` must be set and sent as `Authorization: Bearer <token>`. Without it, starts get 503. Don't put the token in client code: a server action or route should add it.
 
 **The stream.** Contract events arrive as plain messages, like the mock stream, so `onmessage` reads both. Run-level items are named events until change request #5 is settled:
@@ -35,3 +36,15 @@ A late or reconnecting client gets everything it missed, in order. A `: ping` co
 **Attack record** (`/api/attacks/:id`): `record.transcript`, `record.toolCalls`, `record.refunds` (with PayPal's read-back), `record.verdict`.
 
 **Limits.** Attacks run one after another in one server process. A run stops after two failed attacks in a row. Runs and evidence are JSON files under `data/evidence`, and `data/merchant.json` is rewritten as captures are spent and refilled, so a host with a temporary disk loses them on restart.
+
+## Replays
+
+Recorded real runs, for when a live run is too slow or out of quota. They need no token and spend nothing. The refund IDs in them are real and stay verifiable on PayPal.
+
+| Route | What it does |
+|---|---|
+| `GET /api/replays` | The recorded runs. |
+| `GET /api/replays/:id` | One recording's status, score, verdicts and attack records. |
+| `GET /api/replays/:id/stream?speed=1` | The recording over SSE, in the same format as a live run. `speed` is 1, 4 or 16. |
+
+The stream ends with `event: replay.finished`, as the mock stream does. Recordings are in `packages/fixtures/recorded`.

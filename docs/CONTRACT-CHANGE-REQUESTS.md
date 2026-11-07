@@ -72,6 +72,6 @@ Why: the Report's severity breakdown has nothing to read, and any critical leak 
      should be able to show why. Nimbus refusing on its own is neither a PayPal block nor a guard win.
 ```
 
-For the guard (not a contract change): when the guard denies a call, its wrapped `execute` should **return**
-`{ ok: false, code: "HEIST_GUARD_DENIED", message }`, the same shape the toolkit uses for PayPal errors. The oracle uses that
-code to count the attack as blocked by the guard rather than by PayPal. Tell me if you'd rather use a different code.
+The guard is now built on `ashvin/paypal-nimbus` (`packages/runner/src/guard.ts`), because the before/after proof couldn't wait.
+It covers refunds only, and its rules are data in `guard-rules.json`. It uses the contract's `guard.decision` event as is. If you already
+have a guard in progress, let's compare before merging. A denied call returns `{ ok: false, code: "HEIST_GUARD_DENIED", message }`.

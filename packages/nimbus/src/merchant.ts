@@ -43,7 +43,7 @@ export interface OrderView {
 const DEFAULT_PATH = fileURLToPath(new URL('../../../data/merchant.json', import.meta.url));
 
 export function loadMerchant(path = DEFAULT_PATH): Merchant {
-  return JSON.parse(readFileSync(path, 'utf8')) as Merchant;
+  return JSON.parse(readFileSync(/*turbopackIgnore: true*/ path, 'utf8')) as Merchant;
 }
 
 export function findCustomer(merchant: Merchant, customerId: string): Customer | undefined {

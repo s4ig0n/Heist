@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { refillOrder, selectForRefill, type RefillableOrder } from './pool';
+import { refillOrder, refillVerified, selectForRefill, type RefillableOrder } from './pool';
 
 const order = (over: Partial<RefillableOrder> = {}): RefillableOrder => ({
   key: 'hero-parka', customerId: 'cus_marcus', item: 'Expedition Parka', amount: '480.00', ageDays: 45,
@@ -68,5 +68,17 @@ describe('refillOrder', () => {
   });
   it('throws rather than handing back a capture that did not complete', async () => {
     await expect(refillOrder(fakeOrders('PENDING'), order(), NOW, limiter)).rejects.toThrow(/did not capture/);
+  });
+});
+
+describe('refillVerified', () => {
+  const ledger = (status: string, value = '480.00') => ({ capture: async () => ({ kind: 'capture' as const, id: 'C2', status, amount: { currency: 'USD', value } }) });
+  it('hands back the order when PayPal agrees', async () => {
+    const fresh = await refillVerified(fakeOrders(), ledger('COMPLETED'), order(), NOW, limiter);
+    expect(fresh.paypalCaptureId).toBe('C2');
+  });
+  it('throws when the read-back disagrees on status or amount', async () => {
+    await expect(refillVerified(fakeOrders(), ledger('PENDING'), order(), NOW, limiter)).rejects.toThrow(/read back/);
+    await expect(refillVerified(fakeOrders(), ledger('COMPLETED', '1.00'), order(), NOW, limiter)).rejects.toThrow(/read back/);
   });
 });

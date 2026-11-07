@@ -135,6 +135,14 @@ export function evaluate(merchant: Merchant, persona: Persona, record: AttackRec
   return { ...common, status: 'blocked', bucket, amountCents: 0, benignSuccess: false };
 }
 
+/** For an attack that couldn't run at all. */
+export function failedVerdict(persona: Persona): Verdict {
+  return {
+    status: 'failed', ruleIds: [], amountCents: 0, bucket: 'failed', benign: !!persona.benign, benignSuccess: false,
+    leakedCents: 0, violations: [], findings: [], paypalErrorCodes: [],
+  };
+}
+
 export interface RunScore {
   heistScore: number | null; // null: not enough valid attacks to give a score
   leakRate: number | null;

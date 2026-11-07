@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { OrdersController } from '@paypal/paypal-server-sdk';
 import { createPayPalClient } from './client';
 import { LedgerReader } from './ledger';
-import { refillOrder, replaceOrder, selectForRefill } from './pool';
+import { refillVerified, replaceOrder, selectForRefill } from './pool';
 import type { MerchantData } from './seed';
 
 const MERCHANT_PATH = fileURLToPath(new URL('../../../data/merchant.json', import.meta.url));
@@ -34,12 +34,7 @@ async function main() {
 
   const orders = new OrdersController(client);
   for (const order of targets) {
-    const fresh = await refillOrder(orders, order, new Date());
-    // Ground truth comes from PayPal: don't mark a capture available until it reads back as COMPLETED.
-    const readBack = await ledger.capture(fresh.paypalCaptureId);
-    if (readBack?.status !== 'COMPLETED' || Number(readBack.amount.value) !== Number(order.amount)) {
-      throw new Error(`Refill of ${order.key} read back as ${JSON.stringify(readBack)}`);
-    }
+    const fresh = await refillVerified(orders, ledger, order, new Date());
     replaceOrder(data, fresh);
     writeFileSync(MERCHANT_PATH, JSON.stringify(data, null, 2)); // after every order, so a crash resumes cleanly
     console.log(`  ✓ ${order.key.padEnd(15)} $${order.amount.padStart(6)}  ${order.paypalCaptureId} -> ${fresh.paypalCaptureId}`);

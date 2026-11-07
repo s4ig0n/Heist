@@ -1,6 +1,7 @@
 import type { OrdersController } from '@paypal/paypal-server-sdk';
 import { captureOrder } from './capture-order';
 import { paypalRequestId } from './idempotency';
+import type { LedgerReader } from './ledger';
 import type { TokenBucket } from './limiter';
 import type { MerchantData, PooledOrder } from './seed';
 
@@ -56,6 +57,22 @@ export async function refillOrder(
       { paypalOrderId: order.paypalOrderId, paypalCaptureId: order.paypalCaptureId, retiredAt: now.toISOString() },
     ],
   };
+}
+
+/** Refills an order, and only hands it back once PayPal reads the new capture back as COMPLETED for the full amount. */
+export async function refillVerified(
+  orders: Pick<OrdersController, 'createOrder'>,
+  ledger: Pick<LedgerReader, 'capture'>,
+  order: RefillableOrder,
+  now: Date,
+  limiter?: TokenBucket,
+): Promise<RefillableOrder> {
+  const fresh = await refillOrder(orders, order, now, limiter);
+  const readBack = await ledger.capture(fresh.paypalCaptureId);
+  if (readBack?.status !== 'COMPLETED' || Number(readBack.amount.value) !== Number(order.amount)) {
+    throw new Error(`Refill of ${order.key} read back as ${JSON.stringify(readBack)}`);
+  }
+  return fresh;
 }
 
 export function replaceOrder(data: MerchantData, order: RefillableOrder): void {

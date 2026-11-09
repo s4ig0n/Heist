@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { enableStudioDevValidations } from "ag-studio";
+import { AgStudioAiModule, enableStudioDevValidations } from "ag-studio";
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
 import { heistColors as c } from "@/app/heist-preview/heist-theme";
 import type { ReplayRun } from "@/lib/heist/attack-record";
@@ -17,6 +17,7 @@ import {
   type Patch,
 } from "@/lib/heist/report-data";
 import { buildReportData, reportBoard } from "../studio/report-board";
+import { buildForensicsAi } from "../studio/ai";
 import { heistNoirTheme } from "../studio/theme";
 import {
   bumpDataVersion,
@@ -32,14 +33,14 @@ const AFTER = "patched-run";
 
 const noSubscription = () => () => {};
 
-export function Report({ licenseKey }: { licenseKey?: string }) {
+export function Report({ licenseKey, analystModels }: { licenseKey?: string; analystModels: string[] }) {
   const inBrowser = useSyncExternalStore(
     noSubscription,
     () => true,
     () => false,
   );
   if (!inBrowser) return <HeistShell page="report">{null}</HeistShell>;
-  return <ReportBody licenseKey={licenseKey} />;
+  return <ReportBody licenseKey={licenseKey} analystModels={analystModels} />;
 }
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -48,7 +49,7 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function ReportBody({ licenseKey }: { licenseKey?: string }) {
+function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analystModels: string[] }) {
   const router = useRouter();
   const [before, setBefore] = useState<ReplayRun | null>(null);
   const [after, setAfter] = useState<ReplayRun | null>(null);
@@ -99,6 +100,14 @@ function ReportBody({ licenseKey }: { licenseKey?: string }) {
         rows?.patchRules ?? [],
       ),
     [rows],
+  );
+
+  const analyst = useMemo(
+    () =>
+      rows && analystModels.length > 0
+        ? buildForensicsAi(analystModels, { ...rows })
+        : undefined,
+    [analystModels, rows],
   );
 
   useEffect(() => {
@@ -206,13 +215,14 @@ function ReportBody({ licenseKey }: { licenseKey?: string }) {
             Loading the recorded runs…
           </p>
         ) : (
-          <AgStudioProvider licenseKey={licenseKey}>
+          <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio
               style={{ height: "100%", width: "100%" }}
               theme={heistNoirTheme}
               layout={{ widgetBorderEnabled: true }}
               data={data}
               widgets={heistWidgets}
+              ai={analyst}
               initialState={reportBoard}
               mode="view"
               panels={{ view: {} }}

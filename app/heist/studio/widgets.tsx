@@ -6,7 +6,7 @@
 //   - Status cells: an override of Studio's grid widget that renders attack outcomes as colored pills.
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { AgWidgetField, AgWidgetParams } from "ag-studio";
+import type { AgExternalShape, AgFormatShapeParams, AgWidgetField, AgWidgetParams } from "ag-studio";
 import { createWidgets, type AgWidgetDefinition } from "ag-studio-react";
 import type { CustomCellRendererProps } from "ag-grid-react";
 import { heistColors as c } from "@/app/heist-preview/heist-theme";
@@ -27,6 +27,17 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l);
 };
 const useDataVersion = () => useSyncExternalStore(subscribe, () => dataVersion, () => 0);
+
+type TitleFormat = { title?: { enabled?: boolean; text?: string } };
+
+/** Studio 3 exposes its shape builder through defineAiCommand; the command is never executed. */
+const titleFormatShape = ({ api }: AgFormatShapeParams): AgExternalShape<TitleFormat> =>
+  api.defineAiCommand((s) => ({
+    input: s.object({
+      title: s.object({ enabled: s.boolean().optional(), text: s.string().optional() }).optional(),
+    }),
+    execute: () => ({ success: true as const, value: null }),
+  })).shape;
 
 // --- Vault Meter ----------------------------------------------------------------------------
 
@@ -157,6 +168,7 @@ const vaultMeter: AgWidgetDefinition<"vault-meter", VaultMeterState> = {
       aiDescription: "Optional secondary count shown under the total, such as sum of attacks.guardDenials.",
     },
   },
+  formatShape: titleFormatShape,
   form: (p) =>
     p.createDefaults({
       dataMappingItems: [
@@ -357,6 +369,7 @@ const patchDiff: AgWidgetDefinition<"patch-diff", PatchDiffState> = {
     after: { type: "field", supportedRoles: ["numeric"], required: true, intent: "value", aiDescription: "1 if the rule is on after the patch (max of patchRules.after)." },
     reason: { type: "field", supportedRoles: ["category"], intent: "category", aiDescription: "Which personas made the change necessary (patchRules.because)." },
   },
+  formatShape: titleFormatShape,
   form: (p) =>
     p.createDefaults({
       dataMappingItems: [

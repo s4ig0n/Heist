@@ -23,17 +23,20 @@ const SPEEDS = [1, 4, 16] as const;
 
 const noSubscription = () => () => {};
 
-export function Arena(props: { replays: string[]; licenseKey?: string }) {
+type ArenaProps = { replays: string[]; initialReplay?: string; liveStream?: string; licenseKey?: string };
+
+export function Arena(props: ArenaProps) {
   const inBrowser = useSyncExternalStore(noSubscription, () => true, () => false);
   if (!inBrowser) return <HeistShell page="arena">{null}</HeistShell>;
   return <ArenaBoard {...props} />;
 }
 
-function ArenaBoard({ replays, licenseKey }: { replays: string[]; licenseKey?: string }) {
-  const [replayId, setReplayId] = useState(replays.includes("baseline-run") ? "baseline-run" : replays[0] ?? "");
+function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaProps) {
+  const [replayId, setReplayId] = useState(initialReplay ?? (replays.includes("baseline-run") ? "baseline-run" : replays[0] ?? ""));
+  const [live, setLive] = useState(liveStream);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(4);
   const [playKey, setPlayKey] = useState(0);
-  const url = replayId ? `/api/replays/${replayId}/stream?speed=${speed}&play=${playKey}` : null;
+  const url = live ?? (replayId ? `/api/replays/${replayId}/stream?speed=${speed}&play=${playKey}` : null);
   const state = useHeistStream(url);
   const totals = liveTotals(state);
   const data = useMemo(() => buildHeistData(state), [state]);
@@ -53,7 +56,10 @@ function ArenaBoard({ replays, licenseKey }: { replays: string[]; licenseKey?: s
       >
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: c.textMuted }}>
           Recorded run
-          <select value={replayId} onChange={(e) => setReplayId(e.target.value)} style={control}>
+          <select value={replayId} onChange={(e) => {
+            setLive(undefined);
+            setReplayId(e.target.value);
+          }} style={control}>
             {replays.map((id) => (
               <option key={id} value={id}>
                 {REPLAY_LABEL[id] ?? id}
@@ -71,14 +77,17 @@ function ArenaBoard({ replays, licenseKey }: { replays: string[]; licenseKey?: s
             ))}
           </select>
         </label>
-        <button type="button" onClick={() => setPlayKey((k) => k + 1)} style={{ ...control, background: c.gold, color: c.background, fontWeight: 700, cursor: "pointer" }}>
+        <button type="button" onClick={() => {
+            setLive(undefined);
+            setPlayKey((k) => k + 1);
+          }} style={{ ...control, background: c.gold, color: c.background, fontWeight: 700, cursor: "pointer" }}>
           ▶ Replay heist
         </button>
         <Link href={`/heist/replay?run=${replayId}`} style={{ fontSize: 13, color: c.gold }}>
           Open attack replays →
         </Link>
         <span style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>
-          {statusText(state.status)} · {totals.finished}/{totals.attacks} attacks · recorded real sandbox run{speed > 1 ? `, ${speed}× speed` : ""}
+          {statusText(state.status)} · {totals.finished}/{totals.attacks} attacks · {live ? "LIVE run in the PayPal sandbox" : `recorded real sandbox run${speed > 1 ? `, ${speed}× speed` : ""}`}
         </span>
       </section>
 

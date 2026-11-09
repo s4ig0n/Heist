@@ -223,15 +223,180 @@ function MoneyCell(props: CustomCellRendererProps) {
 
 const isField = (field: AgWidgetField, id: string) => field.fieldId === id || field.rootFieldId === id;
 
+// --- Patch Diff ------------------------------------------------------------------------------
+// The guard's rule JSON before and after the patch, one line per rule, with the personas that made
+// each change necessary. "Apply and rerun" calls the handler the page registers.
+
+type PatchDiffState = {
+  type: "patch-diff";
+  dataMapping: { rule?: unknown[]; before?: unknown[]; after?: unknown[]; reason?: unknown[] };
+  format: { title?: { enabled?: boolean; text?: string } };
+};
+
+type ApplyHandler = { label: string; run: () => void; busy?: boolean; note?: string } | null;
+let applyHandler: ApplyHandler = null;
+const applyListeners = new Set<() => void>();
+export function setPatchApplyHandler(handler: ApplyHandler) {
+  applyHandler = handler;
+  applyListeners.forEach((l) => l());
+}
+const useApplyHandler = () =>
+  useSyncExternalStore(
+    (l) => {
+      applyListeners.add(l);
+      return () => applyListeners.delete(l);
+    },
+    () => applyHandler,
+    () => null,
+  );
+
+const readText = (row: Record<string, unknown>, field: AgWidgetField | undefined) =>
+  field ? String(row[field.key] ?? row[field.fieldId] ?? "") : "";
+
+function PatchDiff(params: AgWidgetParams<PatchDiffState>) {
+  const { widgetApi, dataMapping } = params;
+  const version = useDataVersion();
+  const apply = useApplyHandler();
+  const [rows, setRows] = useState<{ rule: string; before: boolean; after: boolean; reason: string }[]>([]);
+  const ruleField = dataMapping.rule?.[0];
+  const beforeField = dataMapping.before?.[0];
+  const afterField = dataMapping.after?.[0];
+  const reasonField = dataMapping.reason?.[0];
+
+  useEffect(() => {
+    const fields = [ruleField, beforeField, afterField, reasonField].filter((f): f is AgWidgetField => !!f);
+    if (!ruleField || !afterField) return;
+    let cancelled = false;
+    widgetApi
+      .getData({ fields })
+      .then(({ results }) => {
+        if (cancelled) return;
+        setRows(
+          results.rows
+            .map((r) => ({
+              rule: readText(r, ruleField),
+              before: readNumber(r, beforeField) > 0,
+              after: readNumber(r, afterField) > 0,
+              reason: readText(r, reasonField),
+            }))
+            .sort((a, b) => Number(b.after !== b.before) - Number(a.after !== a.before) || a.rule.localeCompare(b.rule)),
+        );
+      })
+      .catch(() => setRows([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [widgetApi, ruleField, beforeField, afterField, reasonField, version]);
+
+  const changed = rows.filter((r) => r.before !== r.after).length;
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 10, padding: "4px 2px", boxSizing: "border-box" }}>
+      <p style={{ fontSize: 12, color: c.textMuted }}>
+        {rows.length === 0
+          ? "No patch: this run leaked nothing."
+          : `${changed} rule${changed === 1 ? "" : "s"} switched on. Picked by code from the leaks, not by an LLM.`}
+      </p>
+      <pre
+        aria-label="Guard rules before and after the patch"
+        style={{
+          flex: 1,
+          margin: 0,
+          overflow: "auto",
+          background: c.background,
+          border: `1px solid ${c.border}`,
+          borderRadius: 6,
+          padding: 12,
+          fontSize: 12,
+          lineHeight: 1.7,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+        }}
+      >
+        {rows.map((r) =>
+          r.before === r.after ? (
+            <div key={r.rule} style={{ color: c.textMuted }}>
+              {"  "}&quot;{r.rule}&quot;: {"{"} enabled: {String(r.after)} {"}"}
+            </div>
+          ) : (
+            <div key={r.rule}>
+              <div style={{ color: c.danger, background: "rgba(234,119,119,0.10)" }}>
+                - &quot;{r.rule}&quot;: {"{"} enabled: {String(r.before)} {"}"}
+              </div>
+              <div style={{ color: c.success, background: "rgba(145,199,170,0.10)" }}>
+                + &quot;{r.rule}&quot;: {"{"} enabled: {String(r.after)} {"}"}
+                {r.reason && <span style={{ color: c.textMuted }}>{"   "}← {r.reason}</span>}
+              </div>
+            </div>
+          ),
+        )}
+      </pre>
+      {apply && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={apply.run}
+            disabled={apply.busy}
+            style={{ background: c.gold, color: c.background, border: "none", borderRadius: 6, padding: "8px 14px", fontWeight: 700, cursor: "pointer" }}
+          >
+            {apply.busy ? "Starting…" : apply.label}
+          </button>
+          {apply.note && <span style={{ fontSize: 12, color: c.textMuted }}>{apply.note}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const patchDiff: AgWidgetDefinition<"patch-diff", PatchDiffState> = {
+  id: "patch-diff",
+  label: "Patch Diff",
+  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h6M8 4v6M5 17h6"/><rect x="14" y="4" width="6" height="16" rx="1"/></svg>`,
+  dataMapping: {
+    rule: { type: "field", supportedRoles: ["category"], required: true, intent: "category", aiDescription: "Guard rule id, usually patchRules.ruleId." },
+    before: { type: "field", supportedRoles: ["numeric"], intent: "value", aiDescription: "1 if the rule was on before the patch (max of patchRules.before)." },
+    after: { type: "field", supportedRoles: ["numeric"], required: true, intent: "value", aiDescription: "1 if the rule is on after the patch (max of patchRules.after)." },
+    reason: { type: "field", supportedRoles: ["category"], intent: "category", aiDescription: "Which personas made the change necessary (patchRules.because)." },
+  },
+  form: (p) =>
+    p.createDefaults({
+      dataMappingItems: [
+        { key: "rule", label: "Rule" },
+        { key: "before", label: "Enabled before" },
+        { key: "after", label: "Enabled after" },
+        { key: "reason", label: "Because of" },
+      ],
+    }),
+  comp: PatchDiff,
+  defaultSize: { width: 12, height: 20 },
+  minSize: { width: 8, height: 12 },
+  ai: {
+    label: "Patch Diff",
+    description: "A code-style diff of guard rules before and after a patch, with the reason for each change.",
+    usage: "Use to show which deterministic guard rules a patch switches on. Not for amounts.",
+    configuration: "Map rule to patchRules.ruleId, before and after to max of patchRules.before/after, reason to patchRules.because.",
+  },
+};
+
 export const heistWidgets = createWidgets({
-  additionalTypes: [vaultMeter],
+  additionalTypes: [vaultMeter, patchDiff],
   overrides: [
     {
       id: "grid",
       options: {
         createCellRenderer: (field: AgWidgetField) => {
           if (isField(field, "attacks.bucket")) return StatusCell;
-          if (isField(field, "attacks.leakedUsd") || isField(field, "leaks.amountUsd")) return MoneyCell;
+          if (
+            isField(field, "comparison.beforeOutcome") ||
+            isField(field, "comparison.afterOutcome")
+          )
+            return StatusCell;
+          if (
+            isField(field, "attacks.leakedUsd") ||
+            isField(field, "leaks.amountUsd") ||
+            isField(field, "comparison.beforeLeakedUsd") ||
+            isField(field, "comparison.afterLeakedUsd")
+          )
+            return MoneyCell;
           return undefined;
         },
       },

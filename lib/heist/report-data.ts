@@ -98,7 +98,8 @@ export function buildPatchRules(patch: Patch | null): PatchRuleRow[] {
     const beforeRule = patch.before.rules[ruleId];
     const afterRule = patch.after.rules[ruleId];
     const change = patch.changes.find((c) => c.ruleId === ruleId);
-    const { enabled: _enabled, ...params } = afterRule;
+    const params: Record<string, unknown> = { ...afterRule };
+    delete params.enabled;
     return {
       ruleId,
       before: beforeRule?.enabled ? 1 : 0,

@@ -60,8 +60,8 @@ function useCountUp(target: number): number {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       from.current = target;
-      setShown(target);
-      return;
+      const frame = requestAnimationFrame(() => setShown(target));
+      return () => cancelAnimationFrame(frame);
     }
     const start = performance.now();
     const begin = from.current;

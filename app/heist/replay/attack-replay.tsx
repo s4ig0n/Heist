@@ -39,20 +39,19 @@ const SPAN_STYLE: Record<SpanKind, React.CSSProperties> = {
 
 export function AttackReplay({ replays, initialRun, initialAttack }: { replays: string[]; initialRun?: string; initialAttack?: string }) {
   const [runId, setRunId] = useState(initialRun && replays.includes(initialRun) ? initialRun : replays.includes("baseline-run") ? "baseline-run" : replays[0]);
-  const [run, setRun] = useState<ReplayRun | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{ runId: string; run: ReplayRun } | null>(null);
+  const [failure, setFailure] = useState<{ runId: string; message: string } | null>(null);
   const [attackId, setAttackId] = useState<string | undefined>(initialAttack);
 
   useEffect(() => {
     if (!runId) return;
     let cancelled = false;
-    setRun(null);
-    setError(null);
     fetch(`/api/replays/${runId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: ReplayRun) => {
         if (cancelled) return;
-        setRun(data);
+        setLoaded({ runId, run: data });
+        setFailure(null);
         setAttackId((current) => {
           if (current && data.records.some((r) => r.attackId === current)) return current;
           // Open on the biggest leak: that's the story.
@@ -61,11 +60,14 @@ export function AttackReplay({ replays, initialRun, initialAttack }: { replays: 
           return (leaks[0] ?? data.records[0])?.attackId;
         });
       })
-      .catch((e: Error) => !cancelled && setError(`Couldn't load the recording (${e.message}).`));
+      .catch((e: Error) => !cancelled && setFailure({ runId, message: `Couldn't load the recording (${e.message}).` }));
     return () => {
       cancelled = true;
     };
   }, [runId]);
+
+  const run = loaded?.runId === runId ? loaded.run : null;
+  const error = failure?.runId === runId ? failure.message : null;
 
   // Keep the URL shareable: the video and the README can deep-link to one attack.
   useEffect(() => {
@@ -96,7 +98,7 @@ export function AttackReplay({ replays, initialRun, initialAttack }: { replays: 
         </Link>
       </section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16, padding: 16, alignItems: "start" }}>
+      <div className="heist-replay-grid">
         <nav aria-label="Attacks in this run" style={panel}>
           <h2 style={heading}>ATTACKS</h2>
           {!run && !error && <p style={{ color: c.textMuted, fontSize: 13 }}>Loading…</p>}
@@ -134,7 +136,11 @@ export function AttackReplay({ replays, initialRun, initialAttack }: { replays: 
           </ul>
         </nav>
 
-        {record ? <AttackDetail key={record.attackId} record={record} /> : run && <p style={{ color: c.textMuted }}>Pick an attack.</p>}
+        {record ? <AttackDetail key={record.attackId} record={record} /> : run && (
+          <p role="status" style={{ color: c.textMuted }}>
+            {run.records.length === 0 ? "This recording contains no attacks." : "Pick an attack."}
+          </p>
+        )}
       </div>
     </HeistShell>
   );

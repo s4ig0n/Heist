@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-mono: var(--font-geist-mono);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 body {
@@ -60,4 +60,57 @@ body {
   --color-pp-warning: var(--pp-warning);
   --color-pp-danger: var(--pp-danger);
   --font-paypal: var(--pp-font);
+}
+
+.heist-shell :is(a, button, select, input, textarea):focus-visible {
+  outline: 3px solid #f3c979;
+  outline-offset: 3px;
+}
+
+.heist-arena-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  flex: 1;
+  min-height: 0;
+}
+
+.heist-replay-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .heist-header .heist-sandbox-note {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .heist-arena-grid,
+  .heist-replay-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .heist-arena-feed {
+    border-left: 0 !important;
+    border-top: 1px solid #394552;
+    min-height: 260px !important;
+  }
+
+  .heist-studio-frame {
+    min-height: 760px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heist-shell *,
+  .heist-shell *::before,
+  .heist-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

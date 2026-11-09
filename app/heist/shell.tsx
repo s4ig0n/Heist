@@ -16,6 +16,7 @@ export function HeistShell({ page, children, scroll = false }: { page: HeistPage
   const current = PAGES.find((p) => p.id === page)!;
   return (
     <main
+      className="heist-shell"
       style={{
         height: scroll ? undefined : "100vh",
         minHeight: "100vh",
@@ -26,7 +27,7 @@ export function HeistShell({ page, children, scroll = false }: { page: HeistPage
         fontFamily: "Inter, Arial, sans-serif",
       }}
     >
-      <header style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24, padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
+      <header className="heist-header" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24, padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
         <h1 style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1 }}>
           HEIST <span style={{ color: c.gold }}>/ {current.label.toUpperCase()}</span>
         </h1>
@@ -42,7 +43,7 @@ export function HeistShell({ page, children, scroll = false }: { page: HeistPage
             </Link>
           ))}
         </nav>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>PayPal sandbox only · no real money</span>
+        <span className="heist-sandbox-note" style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>PayPal sandbox only · no real money</span>
       </header>
       <style>{`main code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }`}</style>
       {children}

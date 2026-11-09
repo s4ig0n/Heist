@@ -100,8 +100,8 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", flex: 1, minHeight: 0 }}>
-        <div style={{ minHeight: 0 }}>
+      <div className="heist-arena-grid">
+        <div className="heist-studio-frame" style={{ minHeight: 0 }}>
           <AgStudioProvider licenseKey={licenseKey}>
             <AgStudio
               style={{ height: "100%", width: "100%" }}
@@ -116,7 +116,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
           </AgStudioProvider>
         </div>
 
-        <aside aria-label="Live feed" style={{ borderLeft: `1px solid ${c.border}`, background: c.surface, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <aside className="heist-arena-feed" aria-label="Live feed" style={{ borderLeft: `1px solid ${c.border}`, background: c.surface, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <h2 style={{ fontSize: 13, letterSpacing: 2, color: c.gold, fontWeight: 700, padding: "14px 16px 8px" }}>LIVE FEED</h2>
           <ol aria-live="polite" aria-relevant="additions" style={{ listStyle: "none", margin: 0, padding: "0 16px 16px", overflowY: "auto", flex: 1 }}>
             {feedTail.length === 0 && <li style={{ color: c.textMuted, fontSize: 13 }}>Waiting for the first attack…</li>}

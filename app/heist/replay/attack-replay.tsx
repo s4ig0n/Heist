@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { heistColors as c } from "@/app/heist-preview/heist-theme";
+import { heistColors as c } from "@/app/heist/heist-theme";
 import {
   findSpans,
   orderFacts,

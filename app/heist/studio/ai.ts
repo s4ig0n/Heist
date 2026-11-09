@@ -5,7 +5,13 @@ import {
   type AgAiPromptStarter,
 } from "ag-studio";
 import { openaiAdapter } from "@/app/dashboard/studio/openai-adapter";
-import { explainLeak, summarizeRun, type ForensicsSnapshot } from "@/lib/heist/forensics";
+import {
+  compareRuns,
+  explainLeak,
+  proposePatch,
+  summarizeRun,
+  type ForensicsSnapshot,
+} from "@/lib/heist/forensics";
 
 const PROMPT_STARTERS: AgAiPromptStarter[] = [
   {
@@ -23,7 +29,7 @@ const PROMPT_STARTERS: AgAiPromptStarter[] = [
 ];
 
 export function buildForensicsAi(models: string[], snapshot: ForensicsSnapshot): AgAiHarnessSetup {
-  const adapter = openaiAdapter({ endpoint: "/api/ai", model: models[0] });
+  const adapter = openaiAdapter({ endpoint: "/api/analyst", model: models[0] });
 
   return ({ api }) => {
     const runSummary = api.defineAiTool({
@@ -51,6 +57,28 @@ export function buildForensicsAi(models: string[], snapshot: ForensicsSnapshot):
       },
     });
 
+    const proposePatchTool = api.defineAiTool({
+      name: "propose_patch",
+      description:
+        "Return the deterministic guard-rule changes derived from the verified before/after replay, including the benign-control outcome.",
+      params: (s) => s.object({}),
+      execute: (_args, ctx) => {
+        const proposal = proposePatch(snapshot);
+        return ctx.success(JSON.stringify(proposal), proposal);
+      },
+    });
+
+    const compareRunsTool = api.defineAiTool({
+      name: "compare_runs",
+      description:
+        "Compare verified baseline and patched totals and return exact per-persona outcomes and saved dollars.",
+      params: (s) => s.object({}),
+      execute: (_args, ctx) => {
+        const comparison = compareRuns(snapshot);
+        return ctx.success(JSON.stringify(comparison), comparison);
+      },
+    });
+
     return createAiHarness(api, ({ builtIn }) => {
       const agStudioDefaultAgents = Object.values(builtIn).map((definition) =>
         directLlmRunner({ ...definition, adapter }),
@@ -62,13 +90,15 @@ export function buildForensicsAi(models: string[], snapshot: ForensicsSnapshot):
         adapter,
         maxTurns: 20,
         instructions: () => `You are the Heist Forensics Analyst.
-Use run_summary before answering questions about totals, rankings, or cost. Use explain_leak for a named persona.
+Use run_summary before answering questions about totals, rankings, or cost. Use explain_leak for a named persona. Use compare_runs for before/after claims. Use propose_patch only for the deterministic patch already derived from verified replay evidence.
 Never invent amounts, outcomes, PayPal evidence, or interview claims. Distinguish the $480 Expedition Parka order value from the verified $96 refund leak.
 For chart requests, call run_summary, state the answer, then delegate the visualization to the widget or data agent. Tell it to use the comparison data source with persona as the category and beforeLeakedUsd as the numeric value. Do not merely describe a chart: create it in Studio.
 The patched result is deterministic because the guard runs before PayPal. Refunds return to the original payer; a leak is an out-of-policy merchant refund, not theft.`,
         tools: (ctx) => [
           runSummary,
           explainLeakTool,
+          proposePatchTool,
+          compareRunsTool,
           ctx.studio.viewSchema(),
           ctx.studio.viewPage(),
           ctx.tools.delegateTo(["data", "widget"]),

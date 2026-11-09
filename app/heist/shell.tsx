@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { heistColors as c } from "@/app/heist-preview/heist-theme";
+import { heistColors as c } from "@/app/heist/heist-theme";
 
 const PAGES = [
   { id: "arena", label: "Arena", href: "/heist/arena" },

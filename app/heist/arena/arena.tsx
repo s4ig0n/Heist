@@ -8,7 +8,7 @@ import Link from "next/link";
 import { HeistShell, REPLAY_LABEL, control } from "../shell";
 import { enableStudioDevValidations } from "ag-studio";
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
-import { heistColors as c } from "@/app/heist-preview/heist-theme";
+import { heistColors as c } from "@/app/heist/heist-theme";
 import { useHeistStream } from "@/lib/heist/use-heist-stream";
 import { liveTotals } from "@/lib/heist/stream-state";
 import { buildHeistData } from "../studio/data";
@@ -47,6 +47,8 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
 
   const alarm = state.firstLeakAt !== null;
   const feedTail = state.feed.slice(-40).reverse();
+  const hasSource = Boolean(url);
+  const streamFailed = state.status === "failed";
 
   return (
     <HeistShell page="arena">
@@ -56,7 +58,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
       >
         <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: c.textMuted }}>
           Recorded run
-          <select value={replayId} onChange={(e) => {
+          <select value={replayId} disabled={replays.length === 0} onChange={(e) => {
             setLive(undefined);
             setReplayId(e.target.value);
           }} style={control}>
@@ -77,19 +79,45 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
             ))}
           </select>
         </label>
-        <button type="button" onClick={() => {
+        <button type="button" disabled={!hasSource} onClick={() => {
             setLive(undefined);
             setPlayKey((k) => k + 1);
           }} style={{ ...control, background: c.gold, color: c.background, fontWeight: 700, cursor: "pointer" }}>
           ▶ Replay heist
         </button>
-        <Link href={`/heist/replay?run=${replayId}`} style={{ fontSize: 13, color: c.gold }}>
-          Open attack replays →
-        </Link>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>
+        {replayId && (
+          <Link href={`/heist/replay?run=${replayId}`} style={{ fontSize: 13, color: c.gold }}>
+            Open attack replays →
+          </Link>
+        )}
+        <span aria-live="polite" style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>
           {statusText(state.status)} · {totals.finished}/{totals.attacks} attacks · {live ? "LIVE run in the PayPal sandbox" : `recorded real sandbox run${speed > 1 ? `, ${speed}× speed` : ""}`}
         </span>
       </section>
+
+      {!hasSource && (
+        <div role="status" className="heist-state-panel">
+          <strong>No run is available.</strong>
+          <span>Add a verified replay or start a live run to populate the Arena.</span>
+        </div>
+      )}
+
+      {hasSource && (state.status === "connecting" || state.status === "queued") && (
+        <div role="status" aria-live="polite" className="heist-state-panel">
+          <strong>Loading run evidence…</strong>
+          <span>The Arena will update as verified events arrive.</span>
+        </div>
+      )}
+
+      {streamFailed && (
+        <div role="alert" className="heist-state-panel heist-state-error">
+          <strong>The run stream ended before completion.</strong>
+          <span>{state.statusMessage ?? "Replay the run to reconnect."}</span>
+          <button type="button" onClick={() => setPlayKey((key) => key + 1)} style={control}>
+            Retry run
+          </button>
+        </div>
+      )}
 
       {alarm && (
         <div
@@ -100,7 +128,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
         </div>
       )}
 
-      <div className="heist-arena-grid">
+      <div className="heist-arena-grid" aria-busy={state.status === "connecting" || state.status === "queued"}>
         <div className="heist-studio-frame" style={{ minHeight: 0 }}>
           <AgStudioProvider licenseKey={licenseKey}>
             <AgStudio

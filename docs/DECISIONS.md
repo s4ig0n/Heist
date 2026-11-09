@@ -259,5 +259,5 @@ personas with only those rules. Patches are computed from the run, so they need 
   were left out of the score. It isn't a valid proof, and it's kept as evidence of that. Check `counts.failed` before quoting a score.
 - Model calls are now paced at 14 a minute per model, retries included. The same nine attacks took 6.6 minutes.
 - `HEIST_MAX_RUNS_PER_DAY` caps starts per process, default 10. There is no per-IP limit, because the token already gates starts.
-- ESLint turns off `no-explicit-any` for our three packages, which wrap untyped toolkit results. One lint error is left, in
-  `app/heist-preview/report/page.tsx`, for Gouri.
+- ESLint turns off `no-explicit-any` for the three packages that wrap untyped toolkit results. The discarded preview routes were
+  removed before submission so only verified Heist surfaces remain.

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AgStudioAiModule, enableStudioDevValidations } from "ag-studio";
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
-import { heistColors as c } from "@/app/heist-preview/heist-theme";
+import { heistColors as c } from "@/app/heist/heist-theme";
 import type { ReplayRun } from "@/lib/heist/attack-record";
 import {
   buildComparison,
@@ -24,7 +24,7 @@ import {
   heistWidgets,
   setPatchApplyHandler,
 } from "../studio/widgets";
-import { HeistShell, heading, panel } from "../shell";
+import { HeistShell, control, heading, panel } from "../shell";
 
 if (process.env.NODE_ENV !== "production") enableStudioDevValidations();
 
@@ -55,6 +55,8 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
   const [after, setAfter] = useState<ReplayRun | null>(null);
   const [patch, setPatch] = useState<Patch | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,16 +73,19 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         setBefore(b);
         setAfter(a);
         setPatch(p);
+        setLoading(false);
       })
       .catch(
-        (e: Error) =>
-          !cancelled &&
-          setError(`Couldn't load the recorded runs (${e.message}).`),
+        (e: Error) => {
+          if (cancelled) return;
+          setError(`Couldn't load the recorded runs (${e.message}).`);
+          setLoading(false);
+        },
       );
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   const rows = useMemo(() => {
     if (!before) return null;
@@ -153,17 +158,42 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
 
   const hannahBefore = rows?.comparison.find((r) => r.benign);
   const t = rows?.totals;
+  const empty = Boolean(rows && rows.comparison.length === 0);
+  const retryReport = () => {
+    setLoading(true);
+    setError(null);
+    setAttempt((value) => value + 1);
+  };
 
   return (
     <HeistShell page="report" scroll>
       {error && (
-        <p role="alert" style={{ color: c.danger, padding: 16 }}>
-          {error}
-        </p>
+        <div role="alert" className="heist-state-panel heist-state-error">
+          <strong>Report data could not be loaded.</strong>
+          <span>{error}</span>
+          <button type="button" onClick={retryReport} style={control}>
+            Retry report
+          </button>
+        </div>
+      )}
+
+      {loading && (
+        <div role="status" aria-live="polite" className="heist-state-panel">
+          <strong>Loading verified report data…</strong>
+          <span>Comparing the baseline and patched replay.</span>
+        </div>
+      )}
+
+      {empty && !loading && !error && (
+        <div role="status" className="heist-state-panel">
+          <strong>No attacks were recorded.</strong>
+          <span>Run at least one persona before opening the Report.</span>
+        </div>
       )}
 
       <section
         aria-label="Before and after"
+        aria-busy={loading}
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -210,11 +240,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
       </section>
 
       <div style={{ height: 1290, padding: "0 0 16px" }}>
-        {!rows ? (
-          <p style={{ color: c.textMuted, padding: "0 16px" }}>
-            Loading the recorded runs…
-          </p>
-        ) : (
+        {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio
               style={{ height: "100%", width: "100%" }}
@@ -228,7 +254,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
               panels={{ view: {} }}
             />
           </AgStudioProvider>
-        )}
+        ) : null}
       </div>
 
       <section

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { explainLeak, summarizeRun, type ForensicsSnapshot } from "./forensics";
+import { compareRuns, explainLeak, proposePatch, summarizeRun, type ForensicsSnapshot } from "./forensics";
 
 const snapshot: ForensicsSnapshot = {
   comparison: [
@@ -22,7 +22,16 @@ const snapshot: ForensicsSnapshot = {
     },
   ],
   severity: [],
-  patchRules: [],
+  patchRules: [
+    {
+      ruleId: "refund.window_days", before: 0, after: 1, changed: "changed",
+      because: "Time Traveler", params: '{"maxDays":30}',
+    },
+    {
+      ruleId: "refund.identity_verified", before: 1, after: 1, changed: "unchanged",
+      because: "", params: "",
+    },
+  ],
   totals: {
     before: { leakedUsd: 156, heistScore: 62.5, leakRate: 2 / 3, benignSuccessRate: 1, leaks: 2 },
     after: { leakedUsd: 0, heistScore: 100, leakRate: 0, benignSuccessRate: 1, leaks: 0 },
@@ -43,5 +52,37 @@ describe("Forensics Analyst data", () => {
       beforeLeakedUsd: 60, afterLeakedUsd: 0, fixedBy: "refund.one_per_capture",
     });
     expect(explainLeak(snapshot, "missing")).toBeNull();
+  });
+
+  it("compares the two runs with exact per-persona outcomes", () => {
+    expect(compareRuns(snapshot)).toMatchObject({
+      leakedUsdChange: -156,
+      scoreChange: 37.5,
+      personas: [
+        { personaId: "honest-hannah", beforeOutcome: "allowed", afterOutcome: "allowed" },
+        { personaId: "time-traveler", savedUsd: 96 },
+        { personaId: "double-dipper", savedUsd: 60 },
+      ],
+    });
+  });
+
+  it("proposes only deterministic rule changes and preserves the benign control", () => {
+    expect(proposePatch(snapshot)).toEqual({
+      kind: "deterministic_guard_patch",
+      generatedFrom: "verified_replay_comparison",
+      changes: [
+        {
+          ruleId: "refund.window_days",
+          enabledBefore: false,
+          enabledAfter: true,
+          because: "Time Traveler",
+          params: '{"maxDays":30}',
+        },
+      ],
+      expectedCoveredLeakUsd: 156,
+      benignControl: [
+        { persona: "Honest Hannah", beforeOutcome: "allowed", afterOutcome: "allowed" },
+      ],
+    });
   });
 });

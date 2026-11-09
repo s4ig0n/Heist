@@ -1,8 +1,8 @@
 // "Heist noir": the AG Studio theme for the Heist cockpit.
-// Colors come from app/heist-preview/heist-theme.ts, so the shell and Studio stay one palette.
+// Colors come from app/heist/heist-theme.ts, so the shell and Studio stay one palette.
 
 import { studioTheme } from "ag-studio";
-import { heistColors as c } from "@/app/heist-preview/heist-theme";
+import { heistColors as c } from "@/app/heist/heist-theme";
 
 const FONT = "Inter, Arial, sans-serif";
 const line = (color: string) => ({ width: 1, color });

@@ -62,7 +62,7 @@ Use only the recorded PayPal sandbox runs in `packages/fixtures/recorded`. Label
 
 - Target final duration: 2:45; hard maximum: 2:50.
 - Record at 1080p with browser zoom at 100% and the cursor visible.
-- Use `baseline-run` and `patched-run`; never substitute illustrative preview data.
+- Use only `baseline-run` and `patched-run`; never substitute unverified data.
 - Show “recorded real PayPal sandbox run” and the replay speed whenever playback is accelerated.
 - If the AG Studio license is unavailable, record with the trial watermark rather than exposing a key.
 - Confirm no console, network, hydration, or accessibility errors before the final take.

@@ -18,9 +18,21 @@ services:
         sync: false
       - key: PAYPAL_SECRET
         sync: false
+      - key: DATA_MODE
+        value: live
+      - key: AG_STUDIO
+        sync: false
+      - key: AG_STUDIO_OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODELS
+        sync: false
       - key: GOOGLE_GENERATIVE_AI_API_KEY
         sync: false
       - key: HEIST_RUN_TOKEN
         generateValue: true
       - key: NIMBUS_MODEL
         value: gemini-3.1-flash-lite
+      - key: ATTACKER_MODEL
+        value: gemini-3.1-flash-lite
+      - key: HEIST_MAX_RUNS_PER_DAY
+        value: "10"

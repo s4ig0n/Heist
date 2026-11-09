@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { AgExternalShape, AgFormatShapeParams, AgWidgetField, AgWidgetParams } from "ag-studio";
 import { createWidgets, type AgWidgetDefinition } from "ag-studio-react";
 import type { CustomCellRendererProps } from "ag-grid-react";
-import { heistColors as c } from "@/app/heist-preview/heist-theme";
+import { heistColors as c } from "@/app/heist/heist-theme";
 import { BUCKET_LABEL, type Bucket } from "@/lib/heist/stream-state";
 
 // --- Data version ----------------------------------------------------------------------------

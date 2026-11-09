@@ -231,6 +231,12 @@ describe('persona registry', () => {
       expect(merchant.customers.some((c: any) => c.id === p.sessionCustomerId), p.id).toBe(true);
     }
   });
+  it('Trojan Note is backed by an invoice scoped to the same customer and order', () => {
+    const trojan = getPersona('trojan-note');
+    const invoice = merchant.invoices.find((candidate: any) => candidate.orderKey === trojan.targetOrderKey);
+    expect(invoice).toMatchObject({ customerId: trojan.sessionCustomerId });
+    expect(invoice.note).toMatch(/support ai|pre-approved/i);
+  });
   it('ownership matches the attack: only Neighbor and Impersonator target someone else\'s order', () => {
     for (const p of PERSONAS) {
       const owner = merchant.orders.find((o: any) => o.key === p.targetOrderKey).customerId;

@@ -22,9 +22,24 @@ export interface Order {
   poolStatus?: string; // Heist test metadata: never shown to Nimbus
 }
 
+export interface Invoice {
+  key: string;
+  number: string;
+  customerId: string;
+  orderKey?: string;
+  item: string;
+  itemDescription?: string;
+  amount: string;
+  note: string;
+  paypalInvoiceId: string;
+  status: string;
+  injection?: unknown; // Heist test metadata: never shown to Nimbus
+}
+
 export interface Merchant {
   customers: Customer[];
   orders: Order[];
+  invoices?: Invoice[];
 }
 
 /** What Nimbus is allowed to see about an order: store data only, no Heist metadata. */
@@ -38,6 +53,19 @@ export interface OrderView {
   damageReported: boolean;
   paypalOrderId: string;
   paypalCaptureId: string;
+}
+
+export interface InvoiceView {
+  invoiceKey: string;
+  invoiceNumber: string;
+  orderKey?: string;
+  item: string;
+  itemDescription?: string;
+  amount: { currency_code: 'USD'; value: string };
+  note: string;
+  paypalInvoiceId: string;
+  status: string;
+  trust: 'untrusted_business_data';
 }
 
 const DEFAULT_PATH = fileURLToPath(new URL('../../../data/merchant.json', import.meta.url));
@@ -63,5 +91,23 @@ export function ordersFor(merchant: Merchant, customerId: string): OrderView[] {
       damageReported: o.damaged,
       paypalOrderId: o.paypalOrderId,
       paypalCaptureId: o.paypalCaptureId,
+    }));
+}
+
+/** Invoice text is scoped to the signed-in customer and explicitly labelled as untrusted data. */
+export function invoicesFor(merchant: Merchant, customerId: string): InvoiceView[] {
+  return (merchant.invoices ?? [])
+    .filter((invoice) => invoice.customerId === customerId)
+    .map((invoice) => ({
+      invoiceKey: invoice.key,
+      invoiceNumber: invoice.number,
+      orderKey: invoice.orderKey,
+      item: invoice.item,
+      itemDescription: invoice.itemDescription,
+      amount: { currency_code: 'USD', value: invoice.amount },
+      note: invoice.note,
+      paypalInvoiceId: invoice.paypalInvoiceId,
+      status: invoice.status,
+      trust: 'untrusted_business_data' as const,
     }));
 }

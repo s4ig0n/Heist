@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { HeistShell, REPLAY_LABEL, control } from "../shell";
 import { enableStudioDevValidations } from "ag-studio";
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
 import { heistColors as c } from "@/app/heist-preview/heist-theme";
@@ -17,19 +18,14 @@ import { bumpDataVersion, heistWidgets } from "../studio/widgets";
 
 if (process.env.NODE_ENV !== "production") enableStudioDevValidations();
 
-const REPLAY_LABEL: Record<string, string> = {
-  "baseline-run": "Nimbus as shipped (no guard)",
-  "guarded-run": "Nimbus with the Heist guard",
-  "hero-run": "Hero run",
-  "patched-run": "Patched rerun",
-};
+
 const SPEEDS = [1, 4, 16] as const;
 
 const noSubscription = () => () => {};
 
 export function Arena(props: { replays: string[]; licenseKey?: string }) {
   const inBrowser = useSyncExternalStore(noSubscription, () => true, () => false);
-  if (!inBrowser) return <Shell>{null}</Shell>;
+  if (!inBrowser) return <HeistShell page="arena">{null}</HeistShell>;
   return <ArenaBoard {...props} />;
 }
 
@@ -50,7 +46,7 @@ function ArenaBoard({ replays, licenseKey }: { replays: string[]; licenseKey?: s
   const feedTail = state.feed.slice(-40).reverse();
 
   return (
-    <Shell>
+    <HeistShell page="arena">
       <section
         aria-label="Run controls"
         style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", padding: "12px 16px", borderBottom: `1px solid ${c.border}` }}
@@ -78,6 +74,9 @@ function ArenaBoard({ replays, licenseKey }: { replays: string[]; licenseKey?: s
         <button type="button" onClick={() => setPlayKey((k) => k + 1)} style={{ ...control, background: c.gold, color: c.background, fontWeight: 700, cursor: "pointer" }}>
           ▶ Replay heist
         </button>
+        <Link href={`/heist/replay?run=${replayId}`} style={{ fontSize: 13, color: c.gold }}>
+          Open attack replays →
+        </Link>
         <span style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>
           {statusText(state.status)} · {totals.finished}/{totals.attacks} attacks · recorded real sandbox run{speed > 1 ? `, ${speed}× speed` : ""}
         </span>
@@ -121,39 +120,11 @@ function ArenaBoard({ replays, licenseKey }: { replays: string[]; licenseKey?: s
           </ol>
         </aside>
       </div>
-    </Shell>
+    </HeistShell>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main style={{ height: "100vh", display: "flex", flexDirection: "column", background: c.background, color: c.text, fontFamily: "Inter, Arial, sans-serif" }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 24, padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1 }}>
-          HEIST <span style={{ color: c.gold }}>/ ARENA</span>
-        </h1>
-        <nav style={{ display: "flex", gap: 18, fontSize: 14 }}>
-          <Link href="/heist/arena" aria-current="page" style={{ color: c.gold }}>
-            Arena
-          </Link>
-          <span style={{ color: c.textMuted }}>Attack Replay</span>
-          <span style={{ color: c.textMuted }}>Report</span>
-        </nav>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: c.textMuted }}>PayPal sandbox only</span>
-      </header>
-      {children}
-    </main>
-  );
-}
 
-const control: React.CSSProperties = {
-  background: c.surfaceRaised,
-  color: c.text,
-  border: `1px solid ${c.border}`,
-  borderRadius: 6,
-  padding: "6px 10px",
-  fontSize: 13,
-};
 
 const toneColor = (tone: string) => (tone === "leak" ? c.danger : tone === "guard" ? c.gold : tone === "ok" ? c.success : c.text);
 

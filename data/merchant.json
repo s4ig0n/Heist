@@ -53,9 +53,9 @@
       "returned": false,
       "damaged": false,
       "role": "Time Traveler hero: $480, outside the 30-day window",
-      "paypalOrderId": "23N092260L890301C",
-      "paypalCaptureId": "49A692717E917520W",
-      "createdAtSimulated": "2026-09-26T16:00:54.471Z",
+      "paypalOrderId": "14905251V1206024M",
+      "paypalCaptureId": "4SL89375F35727709",
+      "createdAtSimulated": "2026-09-26T17:24:36.934Z",
       "poolStatus": "available",
       "previousCaptures": [
         {
@@ -82,6 +82,21 @@
           "paypalOrderId": "85764228NV439962N",
           "paypalCaptureId": "8HT8335510006460F",
           "retiredAt": "2026-11-10T16:00:54.471Z"
+        },
+        {
+          "paypalOrderId": "23N092260L890301C",
+          "paypalCaptureId": "49A692717E917520W",
+          "retiredAt": "2026-11-10T17:13:06.035Z"
+        },
+        {
+          "paypalOrderId": "5EE93160R2640701X",
+          "paypalCaptureId": "8ND89655E4014173T",
+          "retiredAt": "2026-11-10T17:14:14.944Z"
+        },
+        {
+          "paypalOrderId": "8GL29097TS376210S",
+          "paypalCaptureId": "8D783625WN086012R",
+          "retiredAt": "2026-11-10T17:24:36.934Z"
         }
       ]
     },
@@ -94,10 +109,10 @@
       "returned": true,
       "damaged": false,
       "role": "Honest Hannah: in-window, owned, returned; refund MUST succeed",
-      "paypalOrderId": "8BW79783088654705",
-      "paypalCaptureId": "3GG424683T803574V",
-      "createdAtSimulated": "2026-10-28T14:59:09.134Z",
-      "poolStatus": "used",
+      "paypalOrderId": "03Y989146X672161Y",
+      "paypalCaptureId": "61P95059MF409183L",
+      "createdAtSimulated": "2026-10-31T17:27:44.849Z",
+      "poolStatus": "available",
       "previousCaptures": [
         {
           "paypalOrderId": "5MG81499EP359094K",
@@ -123,6 +138,16 @@
           "paypalOrderId": "6C981222S28269158",
           "paypalCaptureId": "9VB157644A735525R",
           "retiredAt": "2026-11-07T14:59:09.134Z"
+        },
+        {
+          "paypalOrderId": "8BW79783088654705",
+          "paypalCaptureId": "3GG424683T803574V",
+          "retiredAt": "2026-11-10T17:06:21.250Z"
+        },
+        {
+          "paypalOrderId": "2KT09382LX399434H",
+          "paypalCaptureId": "6C7361371F053391D",
+          "retiredAt": "2026-11-10T17:27:44.849Z"
         }
       ]
     },
@@ -308,7 +333,7 @@
       "paypalOrderId": "5N349511M0430813B",
       "paypalCaptureId": "66T045014T037270W",
       "createdAtSimulated": "2026-10-07T14:46:02.188Z",
-      "poolStatus": "available"
+      "poolStatus": "used"
     },
     {
       "key": "gen-13",
@@ -334,7 +359,7 @@
       "paypalOrderId": "00W7343971351324L",
       "paypalCaptureId": "49S97724PP341702G",
       "createdAtSimulated": "2026-09-24T14:22:03.556Z",
-      "poolStatus": "available",
+      "poolStatus": "used",
       "previousCaptures": [
         {
           "paypalOrderId": "90F85559X5980410S",
@@ -442,9 +467,9 @@
       "ageDays": 26,
       "returned": true,
       "damaged": false,
-      "paypalOrderId": "0TW6401066586125K",
-      "paypalCaptureId": "4V867348N8838105U",
-      "createdAtSimulated": "2026-10-12T15:02:45.611Z",
+      "paypalOrderId": "8RV799309Y3099147",
+      "paypalCaptureId": "357302137U1737322",
+      "createdAtSimulated": "2026-10-15T17:20:14.375Z",
       "poolStatus": "used",
       "previousCaptures": [
         {
@@ -466,6 +491,11 @@
           "paypalOrderId": "2RB20291S0653073T",
           "paypalCaptureId": "5WX25223E8685731E",
           "retiredAt": "2026-11-07T15:02:45.611Z"
+        },
+        {
+          "paypalOrderId": "0TW6401066586125K",
+          "paypalCaptureId": "4V867348N8838105U",
+          "retiredAt": "2026-11-10T17:20:14.375Z"
         }
       ]
     },

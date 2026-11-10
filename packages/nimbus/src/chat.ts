@@ -1,4 +1,4 @@
-// Nimbus v0 CLI: `pnpm chat -- --customer cus_marcus`
+// Nimbus v0 CLI: `npx tsx packages/nimbus/src/chat.ts --customer cus_marcus`
 // Talks to the REAL sandbox: any refund Nimbus issues here is a real sandbox refund.
 import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';

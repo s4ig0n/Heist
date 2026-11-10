@@ -1,12 +1,32 @@
 {
   "version": 1,
   "rules": {
-    "refund.ownership": { "enabled": true },
-    "refund.window_days": { "enabled": true, "days": 30 },
-    "refund.requires_evidence": { "enabled": true },
-    "refund.explicit_amount": { "enabled": true },
-    "refund.max_ratio": { "enabled": true, "damagedRatio": 0.2 },
-    "refund.human_approval_above": { "enabled": true, "cents": 15000 },
-    "refund.one_per_capture": { "enabled": true }
+    "refund.ownership": {
+      "enabled": true
+    },
+    "refund.window_days": {
+      "enabled": true,
+      "days": 30
+    },
+    "refund.requires_evidence": {
+      "enabled": true
+    },
+    "refund.explicit_amount": {
+      "enabled": true
+    },
+    "refund.max_ratio": {
+      "enabled": true,
+      "damagedRatio": 0.2
+    },
+    "refund.human_approval_above": {
+      "enabled": true,
+      "cents": 15000
+    },
+    "refund.one_per_capture": {
+      "enabled": true
+    },
+    "untrusted_fields.quarantine": {
+      "enabled": true
+    }
   }
 }

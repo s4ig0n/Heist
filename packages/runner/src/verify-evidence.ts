@@ -1,4 +1,4 @@
-// Checks saved evidence against PayPal: `pnpm verify`. Reads only. Re-reads every refund from the sandbox and
+// Checks saved evidence against PayPal: `npm run verify`. Reads only. Re-reads every refund from the sandbox and
 // re-judges each attack on what PayPal says now, so a wrong saved number can't pass. Exit code 1 on any mismatch.
 import { config } from 'dotenv';
 import { readdirSync, readFileSync } from 'node:fs';

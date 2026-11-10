@@ -65,7 +65,7 @@ export interface InvoiceView {
   note: string;
   paypalInvoiceId: string;
   status: string;
-  trust: 'untrusted_business_data';
+  trust?: 'untrusted_business_data';
 }
 
 const DEFAULT_PATH = fileURLToPath(new URL('../../../data/merchant.json', import.meta.url));
@@ -95,7 +95,7 @@ export function ordersFor(merchant: Merchant, customerId: string): OrderView[] {
 }
 
 /** Invoice text is scoped to the signed-in customer and explicitly labelled as untrusted data. */
-export function invoicesFor(merchant: Merchant, customerId: string): InvoiceView[] {
+export function invoicesFor(merchant: Merchant, customerId: string, labelUntrusted = true): InvoiceView[] {
   return (merchant.invoices ?? [])
     .filter((invoice) => invoice.customerId === customerId)
     .map((invoice) => ({
@@ -108,6 +108,6 @@ export function invoicesFor(merchant: Merchant, customerId: string): InvoiceView
       note: invoice.note,
       paypalInvoiceId: invoice.paypalInvoiceId,
       status: invoice.status,
-      trust: 'untrusted_business_data' as const,
+      ...(labelUntrusted ? { trust: 'untrusted_business_data' as const } : {}),
     }));
 }

@@ -3,15 +3,15 @@ import type { Attacker } from './attacker';
 import { DEFAULT_GUARD_RULES, type Guard, type GuardConfig } from './guard';
 import { failedVerdict, scoreRun, type RunScore, type Verdict } from './oracle';
 import { DEFAULT_PERSONA_IDS, getPersona, PERSONAS, type Persona } from './personas';
-import { runAttack, type AttackRecord, type Judge, type Ledger, type Target } from './run-attack';
+import { runAttack, type AttackRecord, type Judge, type Ledger, type PlantedInjection, type Target } from './run-attack';
 
 export type RunStatus = 'queued' | 'running' | 'finished' | 'failed';
 
-/** What a stream carries, in order. Run-level items aren't contract events (change request #5). */
+/** What a stream carries, in order. The stream sends run-level items as run.status and run.summary events. */
 export type StreamItem =
   | { kind: 'event'; event: HeistEvent }
-  | { kind: 'status'; status: RunStatus; message?: string }
-  | { kind: 'summary'; score: RunScore };
+  | { kind: 'status'; status: RunStatus; message?: string; at?: string }
+  | { kind: 'summary'; score: RunScore; at?: string };
 
 export interface RunState {
   runId: string;
@@ -36,6 +36,7 @@ export interface PreparedAttack {
   ledger: Ledger;
   judge: Judge;
   guard?: Guard;
+  injections?: PlantedInjection[];
 }
 
 export interface RunDeps {
@@ -76,7 +77,7 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
   };
   const setStatus = (run: RunState, status: RunStatus, message?: string) => {
     run.status = status;
-    publish(run, { kind: 'status', status, ...(message ? { message } : {}) });
+    publish(run, { kind: 'status', status, ...(message ? { message } : {}), at: now().toISOString() });
   };
 
   async function runOne(run: RunState, persona: Persona, attackId: string) {
@@ -103,7 +104,7 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
         ...base, eventId: `${attackId}-setup-failed`, type: 'attack.completed', persona: persona.name,
         status: 'failed', amountCents: 0, currency: 'USD', ruleIds: [],
       });
-      publish(run, { kind: 'status', status: 'running', message: `${persona.id}: ${String((err as Error)?.message ?? err)}` });
+      publish(run, { kind: 'status', status: 'running', message: `${persona.id}: ${String((err as Error)?.message ?? err)}`, at: now().toISOString() });
       return verdict;
     }
   }
@@ -124,7 +125,7 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
     }
     run.score = scoreRun(run.verdicts);
     run.finishedAt = now().toISOString();
-    publish(run, { kind: 'summary', score: run.score });
+    publish(run, { kind: 'summary', score: run.score, at: now().toISOString() });
     if (stoppedEarly) setStatus(run, 'failed', `Stopped after ${MAX_CONSECUTIVE_FAILURES} failed attacks in a row`);
     else setStatus(run, 'finished');
     await deps.saveRun(run).catch((err) => console.error('Could not save run', run.runId, err));
@@ -156,7 +157,7 @@ export function createRunManager(deps: RunDeps, now: () => Date = () => new Date
         personaIds: personas.map((p) => p.id), scripted, guarded: !!guardRules, guardRules, patchId: opts.patchId, startedAt: startedAt.toISOString(), items: [], verdicts: [], records: [],
       };
       runs.set(run.runId, run);
-      publish(run, { kind: 'status', status: 'queued' });
+      publish(run, { kind: 'status', status: 'queued', at: run.startedAt });
       active = execute(run, personas)
         .catch((err) => {
           console.error('Run failed', run.runId, err);

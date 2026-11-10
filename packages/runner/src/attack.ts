@@ -1,5 +1,5 @@
 // A run against Nimbus in the REAL sandbox, without the web app.
-// `pnpm attack -- --persona time-traveler --scripted`. --persona takes a comma-separated list. Leave it out for the short default run.
+// `npm run attack -- --persona time-traveler --scripted`. --persona takes a comma-separated list. Leave it out for the short default run.
 // Issues real sandbox refunds. Target orders get a fresh capture first if theirs is spent.
 // --guard puts the policy guard in front of create_refund.
 // --scripted uses the personas' fixed lines. Without it the attacker is an LLM, which uses more quota.

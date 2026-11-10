@@ -1,4 +1,4 @@
-// One-shot Nimbus turn for smoke tests: `pnpm smoke -- --customer cus_hannah "What orders do I have?"`
+// One-shot Nimbus turn for smoke tests: `npx tsx packages/nimbus/src/smoke.ts --customer cus_hannah "What orders do I have?"`
 // Talks to the REAL sandbox. Keep smoke prompts to lookups.
 import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';

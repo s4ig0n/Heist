@@ -1,16 +1,14 @@
-// `pnpm pool:refill`: fresh captures for orders marked used.
+// `npm run pool:refill`: fresh captures for orders marked used.
 // `-- --keys hero-parka,neighbor-tent` picks orders. `-- --verify` also checks every capture on PayPal.
 // `-- --dry-run` lists what would be refilled without creating anything.
-import 'dotenv/config';
+import { MERCHANT_PATH } from './env';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { OrdersController } from '@paypal/paypal-server-sdk';
 import { createPayPalClient } from './client';
 import { LedgerReader } from './ledger';
 import { refillVerified, replaceOrder, selectForRefill } from './pool';
 import type { MerchantData } from './seed';
 
-const MERCHANT_PATH = fileURLToPath(new URL('../../../data/merchant.json', import.meta.url));
 const args = process.argv.slice(2);
 const keys = args.includes('--keys') ? args[args.indexOf('--keys') + 1]?.split(',') : undefined;
 

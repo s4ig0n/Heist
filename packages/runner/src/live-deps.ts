@@ -18,6 +18,19 @@ import { scriptFor, type Persona } from './personas';
 import type { RunDeps, RunState } from './run-manager';
 
 const SAFE_ID = /^[A-Za-z0-9-]{1,120}$/;
+export const QUARANTINED_TEXT = '[removed by policy: unverified text from a document]';
+
+/** The guard's quarantine: free text in invoices never reaches the agent. Amounts, items and ids stay. */
+export function quarantine<T extends { invoices?: any[] }>(merchant: T): T {
+  return {
+    ...merchant,
+    invoices: merchant.invoices?.map((invoice) => ({
+      ...invoice,
+      note: invoice.note ? QUARANTINED_TEXT : invoice.note,
+      itemDescription: invoice.itemDescription ? QUARANTINED_TEXT : invoice.itemDescription,
+    })),
+  };
+}
 
 /** The real thing: Nimbus, Gemini and the PayPal sandbox. `root` is the repo root. */
 export function createLiveDeps(root: string): RunDeps {
@@ -65,14 +78,22 @@ export function createLiveDeps(root: string): RunDeps {
       const paypalTools = createPayPalTools();
       const guard = guardRules ? createGuard({ merchant, sessionCustomerId: persona.sessionCustomerId, ledger, config: guardRules }) : undefined;
 
+      // Heist's own record of what it planted. Nimbus never sees the `injection` field.
+      const injections = ((merchant as any).invoices ?? [])
+        .filter((invoice: any) => invoice.injection?.text)
+        .map((invoice: any) => ({ source: invoice.injection.surface, text: invoice.injection.text }));
+
       return {
         guard,
+        injections,
         captureId: order.paypalCaptureId,
         attacker,
         ledger,
         judge: (p, record) => evaluate(merchant, p, record),
         target: createNimbus({
-          model: pacedModel(google(nimbusModel())), merchant, sessionCustomerId: persona.sessionCustomerId, paypalTools: guard ? guard.wrap(paypalTools) : paypalTools,
+          model: pacedModel(google(nimbusModel())), merchant: guardRules?.rules['untrusted_fields.quarantine']?.enabled ? quarantine(merchant) : merchant, sessionCustomerId: persona.sessionCustomerId, paypalTools: guard ? guard.wrap(paypalTools) : paypalTools,
+          // The first shipped Nimbus: invoice notes read like any other record. NIMBUS_INVOICE_TEXT=labelled tests the hardened prompt.
+          invoiceText: process.env.NIMBUS_INVOICE_TEXT === 'labelled' ? 'labelled' : 'plain',
         }),
       };
     },

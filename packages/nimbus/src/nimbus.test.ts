@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   adaptToolkitTools, createNimbus, createNimbusTools, createPayPalTools, PAYPAL_TOOL_NAMES, type Runner,
 } from './nimbus';
+import { buildSystemPrompt } from './policy';
 import { ordersFor, type Merchant } from './merchant';
 
 const merchant: Merchant = {
@@ -73,6 +74,17 @@ describe('lookup_my_orders', () => {
     expect(Object.keys(schema)).toEqual([]);
     const out = await tools.lookup_my_orders.execute!({ customerId: 'cus_lena' } as any, opts());
     expect(out).toEqual(ordersFor(merchant, 'cus_marcus'));
+  });
+});
+
+describe('invoice text handling', () => {
+  it("plain mode shows invoices with no untrusted label, in the tool and the prompt", async () => {
+    const tools = createNimbusTools({ merchant, sessionCustomerId: 'cus_marcus', paypalTools: fakePayPalTools([]), invoiceText: 'plain' });
+    const invoices = await tools.lookup_my_invoices.execute!({}, opts()) as any[];
+    expect(invoices[0].trust).toBeUndefined();
+    expect(invoices[0].note).toBeTruthy();
+    expect(tools.lookup_my_invoices.description).not.toMatch(/untrusted/);
+    expect(buildSystemPrompt(merchant.customers[0], '2026-11-10', 'plain')).not.toMatch(/untrusted/);
   });
 });
 

@@ -1,5 +1,16 @@
 # Contract change requests: Ashvin → Gouri
 
+**Status, 2026-11-10: all six approved by Gouri and applied in `packages/contracts/src/events.ts`.** Every new field is
+optional, so the mock fixture still validates. Differences from the requests as written:
+
+- `run.summary` counts use the oracle's snake_case bucket names (`blocked_by_paypal`, `refused_by_agent`, and so on),
+  because that is what the stream already sent. Request #5's camelCase names were dropped.
+- `run.summary` carries the score fields at the top level, not under a `score` key, so existing clients keep working.
+- `tool.result` carries `ok` and `errorCode` but not the raw result, which can be large. `GET /api/attacks/:id` has it.
+- `run.status` and `run.summary` are still sent as named SSE events of the same name. Their data is now a full contract event.
+
+The original requests follow.
+
 Against `packages/contracts/src/events.ts` at commit a931216 ("Scaffold Heist preview, contracts, and mock attack pipeline").
 
 What already works: our first real sandbox leak (refund `88704997E35505418`, $96.00 on the hero-parka capture) maps onto
@@ -59,7 +70,7 @@ Not contract changes, but things to know:
 - **zod:** the repo is on zod 4; our packages use 3.25.76, which the Agent Toolkit needs internally. That's fine: we
   parse events with the contracts package's own zod.
 - **Repo shape:** the repo is a single npm Next.js app, and `packages/contracts` has no package.json. Our
-  `packages/paypal` and `packages/nimbus` are pnpm packages. Agree on npm workspaces vs pnpm before I move them in.
+  `packages/paypal` and `packages/nimbus` are pnpm packages. Settled 2026-11-10: npm only. The packages' pnpm files are gone.
 
 ## Added 2026-11-07, from building the oracle
 

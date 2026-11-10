@@ -1,13 +1,13 @@
-import 'dotenv/config';
+import { MERCHANT_PATH } from './env';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { ApiError, OrdersController } from '@paypal/paypal-server-sdk';
 import { captureOrder } from './capture-order';
 import { createPayPalClient } from './client';
 import { paypalRequestId } from './idempotency';
 
 // Merchant "database" for now: heist-local/data/merchant.json
-const OUT = resolve(process.cwd(), '../../data/merchant.json');
+const OUT = MERCHANT_PATH;
 const SEED_RUN = 'seed-v1';
 
 export interface Customer { id: string; name: string; email: string }

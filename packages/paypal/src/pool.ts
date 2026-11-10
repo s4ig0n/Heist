@@ -1,3 +1,4 @@
+import { hostname } from 'node:os';
 import type { OrdersController } from '@paypal/paypal-server-sdk';
 import { captureOrder } from './capture-order';
 import { paypalRequestId } from './idempotency';
@@ -5,7 +6,13 @@ import type { LedgerReader } from './ledger';
 import type { TokenBucket } from './limiter';
 import type { MerchantData, PooledOrder } from './seed';
 
-const REFILL_RUN = 'refill-v1';
+const REFILL_RUN = 'refill-v2';
+
+/**
+ * Which copy of the pool this is. Every deployment keeps its own merchant.json, so two copies at the same generation
+ * must not share a request id, or PayPal hands both the same capture.
+ */
+export const poolId = (env: Record<string, string | undefined> = process.env) => env.HEIST_POOL_ID ?? env.RENDER_SERVICE_ID ?? hostname();
 
 /** A consumed capture stays listed, so old evidence files can still be traced back to their order. */
 export interface RetiredCapture { paypalOrderId: string; paypalCaptureId: string; retiredAt: string }
@@ -43,10 +50,11 @@ export async function refillOrder(
   order: RefillableOrder,
   now: Date,
   limiter?: TokenBucket,
+  pool: string = poolId(),
 ): Promise<RefillableOrder> {
   const previous = order.previousCaptures ?? [];
   const generation = previous.length + 1;
-  const fresh = await captureOrder(orders, paypalRequestId(REFILL_RUN, order.key, String(generation)), order, limiter);
+  const fresh = await captureOrder(orders, paypalRequestId(REFILL_RUN, `${pool}:${order.key}`, String(generation)), order, limiter);
   return {
     ...order,
     ...fresh,

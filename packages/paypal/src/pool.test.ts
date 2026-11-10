@@ -52,6 +52,13 @@ describe('refillOrder', () => {
       previousCaptures: [{ paypalOrderId: 'O1', paypalCaptureId: 'C1', retiredAt: NOW.toISOString() }],
     });
   });
+  it('two copies of the pool never share a request id', async () => {
+    const orders = fakeOrders();
+    await refillOrder(orders, order(), NOW, limiter, 'laptop');
+    await refillOrder(orders, order(), NOW, limiter, 'render');
+    const ids = orders.calls.map((c: any) => c.paypalRequestId);
+    expect(ids[0]).not.toBe(ids[1]);
+  });
   it('reuses the request id until the refill is saved, then moves on', async () => {
     const orders = fakeOrders();
     const first = await refillOrder(orders, order(), NOW, limiter);

@@ -53,9 +53,9 @@
       "returned": false,
       "damaged": false,
       "role": "Time Traveler hero: $480, outside the 30-day window",
-      "paypalOrderId": "85764228NV439962N",
-      "paypalCaptureId": "8HT8335510006460F",
-      "createdAtSimulated": "2026-09-23T14:17:52.878Z",
+      "paypalOrderId": "23N092260L890301C",
+      "paypalCaptureId": "49A692717E917520W",
+      "createdAtSimulated": "2026-09-26T16:00:54.471Z",
       "poolStatus": "available",
       "previousCaptures": [
         {
@@ -77,6 +77,11 @@
           "paypalOrderId": "0NU89874RT396592W",
           "paypalCaptureId": "2R137366V61944538",
           "retiredAt": "2026-11-07T14:17:52.878Z"
+        },
+        {
+          "paypalOrderId": "85764228NV439962N",
+          "paypalCaptureId": "8HT8335510006460F",
+          "retiredAt": "2026-11-10T16:00:54.471Z"
         }
       ]
     },

@@ -71,11 +71,12 @@ export function buildHeistData(state: HeistState): AgDataSourcesDefinition {
       {
         id: "run",
         description: "The run's score from Heist's deterministic oracle. One row; empty until the run finishes.",
-        data: score
+        // Single-persona case studies have no Heist Score (it needs a benign control), so no row is shown.
+        data: score && score.heistScore !== null
           ? [
               {
                 runId: state.runId ?? "",
-                heistScore: score.heistScore ?? 0,
+                heistScore: score.heistScore,
                 leakRate: score.leakRate,
                 benignSuccessRate: score.benignSuccessRate,
                 leakedUsd: score.leakedCents / 100,

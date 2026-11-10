@@ -12,6 +12,23 @@ Attack your refund-capable AI agent, verify every leak on PayPal, patch the poli
 
 Heist is a red-team cockpit for commerce agents with money-moving tools. Adversarial AI customers attack Nimbus Outfitters, a realistic support agent built with PayPal's Agent Toolkit. Heist verifies every successful refund against the PayPal sandbox ledger, scores the merchant-policy loss, generates deterministic guardrails from the violated rule IDs, and reruns the same attacks to prove that covered leaks reach zero while an honest customer still receives her refund.
 
+## The problem
+
+PayPal's Agent Toolkit lets an AI support agent call `create_refund` directly, so a refund policy written in a prompt only holds as long as the model follows it.
+
+- US shoppers were expected to return about $849.9 billion of merchandise in 2025, and retailers estimated 9% of returns were fraudulent (NRF and Happy Returns, 2025 Retail Returns Landscape).
+- In *Moffatt v. Air Canada* (2024 BCCRT 149), a tribunal held the airline liable for refund terms its chatbot made up.
+
+**Who it's for:** the support or operations lead deciding whether an AI agent may issue refunds, and the developer wiring the Agent Toolkit who needs a regression suite.
+
+## What PayPal blocks, and what your agent can still do
+
+PayPal correctly refuses over-refunds, refunds on fully refunded captures, and refunds past its own time limit. It just as correctly executes a refund that breaks the merchant's policy: past the 30-day window, with no return or damage on file, a full refund where a 20% credit applies, a second partial refund, a refund with no amount, or a refund on another customer's order. Heist measures exactly that second group, and reports PayPal's own refusals separately.
+
+## Try it
+
+[heist-dts7.onrender.com/heist/arena](https://heist-dts7.onrender.com/heist/arena): pick a recorded run and press Replay. No login or keys needed. The free host can take about a minute to wake.
+
 ## Inspiration
 
 Support agents are moving from answering questions to taking financial actions. A merchant can write “refund only within 30 days” in a system prompt, but a persuasive customer, indirect prompt injection, invented evidence, or a malformed tool call can still produce an action the payment platform is allowed to execute.
@@ -112,6 +129,10 @@ The cockpit is more than a dashboard. It combines custom widgets, a noir theme, 
 - AG Studio AI agents: built-in data, widget, page, planning, and lead agents.
 - Heist Forensics Analyst: custom `run_summary`, `explain_leak`, `propose_patch`, and `compare_runs` tools through `/api/analyst`, with chart work delegated to AG Studio's agents.
 - OpenAI Responses API: model transport for the AG Studio analyst through a server-side proxy.
+
+## Built during the hackathon
+
+Built October 27 to November 11, 2026, from PayPal's AG Grid boilerplate. Team: Ashvin Jaison Olickal and Gouri.
 
 ## Safety
 

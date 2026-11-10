@@ -6,6 +6,30 @@ Heist red-teams a refund-capable AI support agent with adversarial customer pers
 
 The intended users are commerce, support, fraud, and engineering teams deploying agents with money-moving tools.
 
+**Try it:** [heist-dts7.onrender.com/heist/arena](https://heist-dts7.onrender.com/heist/arena). Pick a recorded run and press Replay. No login or keys are needed. The free host sleeps when idle, so the first load can take about a minute.
+
+## The problem
+
+PayPal's Agent Toolkit lets an AI support agent call `create_refund` directly. That makes refund policy an agent-security problem: a refund rule written in a prompt only holds if the model follows it, while the payment platform will correctly execute any refund the merchant's credentials allow.
+
+- US shoppers were expected to return about **$849.9 billion** of merchandise in 2025, and retailers estimated **9%** of returns were fraudulent ([NRF and Happy Returns, 2025](https://www.nrf.com/research/2025-retail-returns-landscape)).
+- In *Moffatt v. Air Canada* (2024 BCCRT 149), a tribunal held the airline liable for refund terms its chatbot made up, rejecting the argument that the chatbot was responsible for itself ([decision](https://decisions.civilresolutionbc.ca/crt/crtd/en/525448/1/document.do)).
+
+**Who it's for:** the support or operations lead deciding whether an AI agent may issue refunds, who needs the exposure in dollars, and the developer wiring the Agent Toolkit, who needs a regression suite that proves a fix doesn't block honest customers.
+
+### What PayPal blocks, and what Heist measures
+
+| PayPal refuses these itself | PayPal correctly allows these, and merchant policy forbids them |
+|---|---|
+| Refunding more than the capture | A refund past the merchant's 30-day window |
+| Refunding a capture already fully refunded | A refund with no return received and no damage on file |
+| Refunds after PayPal's own time limit | A full refund where only a 20% damage credit applies |
+| | A second partial refund on the same order |
+| | A refund with no amount, which refunds the whole capture |
+| | A refund on another customer's order |
+
+Heist counts only the right-hand column as leaks. PayPal's own refusals are reported separately, as blocked by PayPal.
+
 ## Verified result
 
 These figures come from the recorded PayPal sandbox runs in [`packages/fixtures/recorded`](packages/fixtures/recorded):
@@ -78,6 +102,18 @@ packages/fixtures/recorded Verified run artifacts used by the demo
 data/evidence              Saved per-attack PayPal evidence
 ```
 
+### PayPal APIs used
+
+| API | Where | Used for |
+|---|---|---|
+| Agent Toolkit `create_refund`, `get_refund`, `get_order` | `packages/nimbus/src/nimbus.ts` | The PayPal tools Nimbus can call, restricted to these three |
+| `OrdersController.createOrder` with a sandbox test card | `packages/paypal/src/capture-order.ts` | Seeding and refilling real captures, with a `PayPal-Request-Id` so a retry can't capture twice |
+| `PaymentsController.getRefund` | `packages/paypal/src/ledger.ts` | Reading every refund's amount, status and capture back from PayPal |
+| `PaymentsController.getCapturedPayment` | `packages/paypal/src/ledger.ts` | Checking a capture is untouched before an attack and what changed after |
+| Agent Toolkit `create_invoice` | `packages/paypal/src/seed-invoices.ts` | Seeding the sandbox invoices, including the Trojan Note's planted note |
+
+Every PayPal call goes through one rate limiter, kept under the sandbox's per-minute limit. Agent refunds are never retried automatically.
+
 ### Runtime AI
 
 - **Gemini `gemini-3.1-flash-lite`** — runs Nimbus (temperature 0). The recorded attacks are scripted; a model-driven attacker mode exists but is not used in the recordings.
@@ -133,6 +169,12 @@ npm run pool:refill -- --verify                                    # fresh captu
 
 Never place credentials or a license key in the repository. Enter every `sync: false` value in the Render dashboard.
 
+## Sponsor tools
+
+**AG Grid and AG Studio.** The Arena and Report are AG Studio boards with a custom noir theme (`app/heist/studio/theme.ts`) and custom widgets (`app/heist/studio/widgets.tsx`), including the Vault Meter and Patch Diff, alongside AG Grid attack and tool-call grids. The Forensics Analyst is a custom Studio agent with four tools of its own, registered beside Studio's built-in agents (`app/heist/studio/ai.ts`), so it can hand chart work to them.
+
+**Render.** The hosted demo is one Render web service defined in [`render.yaml`](render.yaml), with sandbox-only settings, a protected run endpoint and a daily cap.
+
 ## APIMatic Context Plugin
 
 We used the APIMatic Context Plugin for PayPal Server SDKs while building the PayPal layer. It answered which
@@ -148,6 +190,10 @@ relying on them. Each use is logged in [`docs/APIMATIC.md`](docs/APIMATIC.md).
 - [`docs/CONTRACT-CHANGE-REQUESTS.md`](docs/CONTRACT-CHANGE-REQUESTS.md) — explicit shared-contract requests.
 - [`docs/VIDEO-SCRIPT.md`](docs/VIDEO-SCRIPT.md) — timed demo script and recording checklist.
 - [`docs/DEVPOST.md`](docs/DEVPOST.md) — submission copy and runtime AI disclosure.
+
+## Built during the hackathon
+
+Everything here was built between October 27 and November 11, 2026, for the PayPal AI Hackathon, starting from PayPal's AG Grid boilerplate. Team: Ashvin Jaison Olickal (PayPal integration, attack runner, oracle, guard, API) and Gouri (Nimbus, cockpit, Attack Replay, Report, Forensics Analyst).
 
 ## License
 

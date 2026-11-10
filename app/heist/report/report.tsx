@@ -57,6 +57,8 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
+  // Studio only shows its assistant panel in edit mode, so asking the analyst switches the board to edit.
+  const [analystOpen, setAnalystOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -239,6 +241,24 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         />
       </section>
 
+      {analyst && rows && !empty && !error ? (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, padding: "0 16px 12px" }}>
+          <button
+            type="button"
+            onClick={() => setAnalystOpen((open) => !open)}
+            aria-pressed={analystOpen}
+            style={{ ...control, minHeight: 44, background: analystOpen ? c.surfaceRaised : c.gold, color: analystOpen ? c.text : c.background, fontWeight: 700, cursor: "pointer" }}
+          >
+            {analystOpen ? "Close the Forensics Analyst" : "Ask the Forensics Analyst"}
+          </button>
+          <span style={{ fontSize: 13, color: c.textMuted }}>
+            {analystOpen
+              ? "Try: \u201cWhich persona cost us most? Chart it.\u201d The board is editable while the analyst is open."
+              : "A custom AG Studio agent with Heist's own tools, working with Studio's built-in agents."}
+          </span>
+        </div>
+      ) : null}
+
       <div style={{ height: 1290, padding: "0 0 16px" }}>
         {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
@@ -250,8 +270,8 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
               widgets={heistWidgets}
               ai={analyst}
               initialState={reportBoard}
-              mode="view"
-              panels={{ view: {} }}
+              mode={analyst && analystOpen ? "edit" : "view"}
+              panels={{ view: {}, edit: { right: ["ai"] } }}
             />
           </AgStudioProvider>
         ) : null}

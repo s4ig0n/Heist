@@ -99,6 +99,16 @@ npm run build
 
 `npm test` runs the root UI/data tests plus Nimbus, runner, guard, patch, oracle, limiter, and PayPal package tests. The production build does not require network access to fetch fonts.
 
+### Command line
+
+These use the sandbox values in `packages/paypal/.env` or the environment, and refuse unless `PAYPAL_ENVIRONMENT=SANDBOX`.
+
+```bash
+npm run attack -- --persona time-traveler,trojan-note --scripted   # add --guard for the full guard
+npm run verify                                                     # re-read every saved refund from PayPal
+npm run pool:refill -- --verify                                    # fresh captures for spent orders
+```
+
 ## Deploy
 
 [`render.yaml`](render.yaml) defines the web service, sandbox-only environment, run token, daily cap, pinned Nimbus and attacker models, optional AG Studio license, and optional analyst key. The health check is `GET /api/replays`.

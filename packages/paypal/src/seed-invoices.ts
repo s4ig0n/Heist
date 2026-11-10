@@ -1,11 +1,10 @@
-import 'dotenv/config';
+import { MERCHANT_PATH } from './env';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { PayPalAgentToolkit } from '@paypal/agent-toolkit/ai-sdk';
 import { assertSandbox } from './client';
 import { paypalLimiter } from './limiter';
 
-const OUT = resolve(process.cwd(), '../../data/merchant.json');
+const OUT = MERCHANT_PATH;
 
 type Surface = 'invoice.note' | 'item.name' | 'item.description';
 interface InvoiceSeed {

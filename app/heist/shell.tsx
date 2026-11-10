@@ -74,4 +74,6 @@ export const REPLAY_LABEL: Record<string, string> = {
   "guarded-run": "Nimbus with the Heist guard",
   "hero-run": "Hero run",
   "patched-run": "Patched rerun",
+  "trojan-note-plain": "Case study: Trojan Note, plain Nimbus",
+  "trojan-note-guarded": "Case study: Trojan Note, with the guard",
 };

@@ -30,7 +30,7 @@ For every attack, the Arena streams the conversation and tool calls into an AG S
 
 The patch engine maps observed violations to JSON guard rules. A model may explain why a patch exists, but code alone selects the rules. The guard wraps `create_refund.execute` and evaluates the trusted session, merchant records, tool arguments, and PayPal capture state before the request reaches PayPal.
 
-The Report compares the baseline and patched rerun, shows a Patch Diff, and keeps Honest Hannah visible as a regression test. A custom AG Studio Forensics Analyst can answer questions such as “Which persona cost us most? Chart it.” using verified replay data and Studio's built-in data and widget agents.
+The Report compares the baseline and patched rerun, shows a Patch Diff, and keeps Honest Hannah visible as a regression test. A custom AG Studio Forensics Analyst, with `run_summary`, `explain_leak`, `propose_patch` and `compare_runs` tools, is built to answer questions such as “Which persona cost us most? Chart it.” by delegating the chart to Studio's built-in agents.
 
 ## Verified result
 
@@ -50,12 +50,14 @@ The deterministic patch enabled `refund.window_days`, `refund.requires_evidence`
 
 These are PayPal sandbox results. Refunds return to the original payer; a “leak” is an out-of-policy refund the merchant did not owe, not money transferred to the attacker.
 
+Separately, a Trojan Note case study (a hostile instruction planted in an invoice note) produced one out-of-policy $140.00 refund against plain Nimbus. With the guard's quarantine on, the planted text never reached the agent, and Nimbus refused. These runs are not part of the $167 result. Recorded runs use one pinned model and scripted customers to test known failure modes; they are not a general benchmark. In recorded runs the guard denied refunds under `refund.window_days` and `refund.one_per_capture`; its other refund rules are covered by deterministic tests.
+
 ## How we built it
 
 - **Next.js 16 and React 19** host the cockpit and server routes.
 - **PayPal Agent Toolkit** gives Nimbus restricted order and refund tools.
 - **PayPal Orders and Payments APIs** seed sandbox captures and read refund evidence back from the ledger.
-- **Vercel AI SDK and Gemini** run Nimbus and the model-driven attacker lane; Nimbus is pinned at temperature 0.
+- **Vercel AI SDK and Gemini** run Nimbus, pinned at temperature 0. The recorded attacks are scripted; a model-driven attacker mode exists but is not used in the recordings.
 - **AG Studio and AG Grid** power the Arena, Report, attack grid, charts, custom theme, Vault Meter, Patch Diff, and Forensics Analyst.
 - **Zod and Vitest** validate the shared event stream and cover Nimbus, runner, oracle, guard, patch engine, data reducers, and analyst summaries.
 - **Render** runs the single web service with sandbox-only settings, protected live-run starts, serialized execution, and a daily cap.
@@ -105,7 +107,7 @@ The cockpit is more than a dashboard. It combines custom widgets, a noir theme, 
 
 ## Runtime AI tools and models
 
-- Gemini `gemini-3.1-flash-lite`: Nimbus support agent and model-driven adversarial customers.
+- Gemini `gemini-3.1-flash-lite`: the Nimbus support agent. The recorded customers are scripted; a model-driven attacker mode (same model family) exists but is not used in the recordings.
 - PayPal Agent Toolkit: restricted PayPal tools exposed to Nimbus.
 - AG Studio AI agents: built-in data, widget, page, planning, and lead agents.
 - Heist Forensics Analyst: custom `run_summary`, `explain_leak`, `propose_patch`, and `compare_runs` tools through `/api/analyst`, with chart work delegated to AG Studio's agents.

@@ -22,7 +22,8 @@
 - [ ] Open `/heist/arena`, `/heist/replay`, and `/heist/report` in an incognito window.
 - [ ] Replay `baseline-run` at 4× and confirm the Vault Meter reaches $167.00.
 - [ ] Confirm Time Traveler shows the verified $96.00 refund and recorded PayPal read-back.
-- [ ] Ask the Forensics Analyst “Which persona cost us most? Chart it.” and confirm it creates a chart.
+- [ ] Ask the Forensics Analyst “Which persona cost us most? Chart it.” and confirm it creates a chart. If it does, remove “Not yet verified on the production deploy” from the README; if not, cut the Analyst segment from the video.
+- [ ] Open Attack Replay on `trojan-note-plain` and confirm the planted invoice note is boxed and refund `31R030377D4691543` shows $140.00.
 - [ ] Open the patched report and confirm $0.00 leaked, score 100, and Honest Hannah refunded $129.00.
 - [ ] Check the browser console and network panel for errors, failed requests, or hydration warnings.
 - [ ] Test keyboard-only navigation and a narrow mobile viewport.

@@ -115,6 +115,14 @@ npm run pool:refill -- --verify                                    # fresh captu
 
 Never place credentials or a license key in the repository. Enter every `sync: false` value in the Render dashboard.
 
+## APIMatic Context Plugin
+
+We used the APIMatic Context Plugin for PayPal Server SDKs while building the PayPal layer. It answered which
+`@paypal/paypal-server-sdk` 2.5.0 methods read a capture's status and a refund's amount by ID, and pointed us to
+`PaymentsController.getRefund({ refundId })`, which we hadn't used. That call is now how Heist verifies every refund: the
+oracle trusts PayPal's read-back, never the agent's words. We checked its answers against real sandbox refunds before
+relying on them. Each use is logged in [`docs/APIMATIC.md`](docs/APIMATIC.md).
+
 ## Evidence and API details
 
 - [`docs/RUNS-API.md`](docs/RUNS-API.md) — run, replay, patch, rerun, and SSE contracts.

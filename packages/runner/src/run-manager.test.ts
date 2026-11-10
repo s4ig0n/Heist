@@ -5,7 +5,7 @@ import { evaluate } from './oracle';
 import { PERSONAS } from './personas';
 import { DEFAULT_GUARD_RULES } from './guard';
 import { createRunManager, RunConflictError, RunLimitError, RunRequestError, type RunDeps, type RunState, type StreamItem } from './run-manager';
-import { createReplayResponse, createRunStreamResponse, formatItem, parseLastEventId, replayDelayMs } from './sse';
+import { createReplayResponse, createRunStreamResponse, formatItem, parseLastEventId, replayDelayMs, runItemEvent } from './sse';
 
 const merchant = {
   customers: [],
@@ -173,12 +173,28 @@ describe('run manager', () => {
 describe('SSE', () => {
   const read = async (r: Response) => r.text();
 
-  it('contract events are plain messages, run items are named, and all carry ids', () => {
-    const status = formatItem({ kind: 'status', status: 'running' }, 0);
-    expect(status).toBe('id: 1\nevent: run.status\ndata: {"status":"running"}\n\n');
+  it('attack events are plain messages, run items are named contract events, and all carry ids', () => {
+    const status = formatItem({ kind: 'status', status: 'running', at: '2026-11-10T00:00:00.000Z' }, 0, 'run-1');
+    expect(status).toBe('id: 1\nevent: run.status\ndata: ' + JSON.stringify({
+      eventId: 'run-1-1', runId: 'run-1', timestamp: '2026-11-10T00:00:00.000Z', verification: 'sandbox', type: 'run.status', status: 'running',
+    }) + '\n\n');
     const event = formatItem({ kind: 'event', event: { type: 'attack.started' } as any }, 4);
     expect(event).toBe('id: 5\ndata: {"type":"attack.started"}\n\n');
     expect(formatItem({ kind: 'summary', score: { heistScore: 1 } as any }, 1)).toContain('event: run.summary');
+  });
+
+  it('run.status and run.summary validate against the contract, including old recordings with no times', async () => {
+    const manager = createRunManager(fakeDeps().deps);
+    const run = manager.start();
+    await manager.idle();
+    for (const [i, item] of run.items.entries()) {
+      if (item.kind === 'event') continue;
+      expect(() => HeistEventSchema.parse(runItemEvent(item, i, run.runId, run.startedAt))).not.toThrow();
+      const { at: _at, ...old } = item;
+      expect(runItemEvent(old, i, run.runId, run.startedAt).timestamp).toBe(run.startedAt);
+    }
+    const summary = run.items.find((i) => i.kind === 'summary')!;
+    expect(runItemEvent(summary as any, 0, run.runId, run.startedAt)).toMatchObject({ type: 'run.summary', heistScore: 0, counts: { leaked: 1, allowed: 1 } });
   });
 
   it('parses Last-Event-ID, treating junk as the start', () => {
@@ -197,7 +213,7 @@ describe('SSE', () => {
     const text = await read(response);
     expect(text).toContain('event: run.summary');
     expect(text).toContain('"type":"attack.completed"');
-    expect(text.trimEnd().endsWith('data: {"status":"finished"}')).toBe(true);
+    expect(text.trimEnd()).toMatch(/"type":"run.status","status":"finished"}$/);
     expect(text.match(/^id: /gm)).toHaveLength(run.items.length);
   });
 

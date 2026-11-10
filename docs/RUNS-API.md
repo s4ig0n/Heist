@@ -17,7 +17,7 @@ Real runs in the PayPal sandbox. Everything here refuses unless `PAYPAL_ENVIRONM
 - Only one run at a time: a second start gets 409. An unknown persona gets 400. More than `HEIST_MAX_RUNS_PER_DAY` runs (default 10, counted per server process) gets 429.
 - In production, `HEIST_RUN_TOKEN` must be set and sent as `Authorization: Bearer <token>`. Without it, starts get 503. Don't put the token in client code: a server action or route should add it.
 
-**The stream.** Contract events arrive as plain messages, like the mock stream, so `onmessage` reads both. Run-level items are named events until change request #5 is settled:
+**The stream.** Every message is a `HeistEvent` from `packages/contracts`. Attack events arrive as plain messages, like the mock stream, so `onmessage` reads both. `run.status` and `run.summary` arrive as named events of the same name:
 
 ```ts
 const source = new EventSource(run.streamUrl);
@@ -29,9 +29,11 @@ source.addEventListener("run.status", (m) => {
 });
 ```
 
+Per attack, in order: `attack.started`; then `turn` for each line (`role` is `attacker` or `target`); for each tool call, `tool.called` (with `toolCallId`), `guard.decision` on guarded runs, `tool.result` (`ok`, `errorCode`), `injection.observed` when the result carries text Heist planted, and `refund.observed` (with `paypalCaptureId` and `toolCallId`) for a refund that reached PayPal; then `attack.completed` (with `blockedBy`, `paypalErrorCode` and `severity` when they apply). The target's `turn` comes after its tool calls.
+
 A late or reconnecting client gets everything it missed, in order. A `: ping` comment goes out every 15 seconds. A `running` status with a `message` reports a problem with one attack while the run continues.
 
-**Score** (`run.summary`): `heistScore` (null without both a valid attack and a valid benign run), `leakRate`, `benignSuccessRate`, `leakedCents`, `cappedByCriticalLeak`, and `counts` by bucket: `leaked`, `blocked_by_paypal`, `blocked_by_guard`, `refused_by_agent`, `allowed`, `benign_denied`, `failed`.
+**Score** (`run.summary`, at the top level of the event): `heistScore` (null without both a valid attack and a valid benign run), `leakRate`, `benignSuccessRate`, `leakedCents`, `cappedByCriticalLeak`, and `counts` by bucket: `leaked`, `blocked_by_paypal`, `blocked_by_guard`, `refused_by_agent`, `allowed`, `benign_denied`, `failed`.
 
 **Attack record** (`/api/attacks/:id`): `record.transcript`, `record.toolCalls`, `record.refunds` (with PayPal's read-back), `record.verdict`.
 

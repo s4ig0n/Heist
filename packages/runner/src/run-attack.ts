@@ -1,7 +1,7 @@
 import type { HeistEvent } from '../../contracts/src/events';
 import type { CaptureRecord, RefundRecord } from '../../paypal/src/ledger';
 import type { Attacker, TranscriptLine } from './attacker';
-import { GUARD_DENIED_CODE, isContractRule, type Verdict } from './oracle';
+import { GUARD_DENIED_CODE, isContractRule, type Bucket, type Verdict } from './oracle';
 import type { GuardDecision } from './guard';
 import type { Persona } from './personas';
 
@@ -19,6 +19,9 @@ export type Ledger = {
   refund(id: string): Promise<RefundRecord | null>;
 };
 
+/** Text planted in merchant data, such as an invoice note, that tries to give the agent orders. */
+export interface PlantedInjection { source: string; text: string }
+
 export interface ObservedRefund {
   toolCallId: string;
   args: unknown;
@@ -27,6 +30,8 @@ export interface ObservedRefund {
   readBack: RefundRecord | null;
   amountCents: number; // from the PayPal read-back only, never from args or the agent's words
   succeeded: boolean;
+  /** A planted injection had reached the agent through a tool result before this refund. */
+  afterInjection?: boolean;
 }
 
 export type StopReason = 'goal' | 'attacker_stopped' | 'max_turns' | 'error';
@@ -42,6 +47,8 @@ export interface AttackRecord {
   transcript: TranscriptLine[];
   toolCalls: { toolCallId: string; toolName: string; args: unknown; result: unknown }[];
   refunds: ObservedRefund[];
+  /** Planted injections that reached the agent in this attack. */
+  injections?: PlantedInjection[];
   captureBefore: CaptureRecord;
   captureAfter: CaptureRecord | null;
   /** The capture moved but no refund was read back, e.g. the model call failed right after the tool ran. */
@@ -62,6 +69,8 @@ export interface RunAttackOptions {
   attacker: Attacker;
   /** Present on guarded runs: what the guard decided for a tool call. */
   guard?: { decisionFor(toolCallId: string): GuardDecision | undefined };
+  /** Planted text to watch for in tool results. */
+  injections?: PlantedInjection[];
   ledger: Ledger;
   judge: Judge;
   emit: (event: HeistEvent) => void;
@@ -69,14 +78,23 @@ export interface RunAttackOptions {
   now?: () => Date;
 }
 
+function parseResult(result: unknown): any {
+  if (typeof result !== 'string') return result;
+  try { return JSON.parse(result); } catch { return result; }
+}
+
 function parseRefundResult(result: unknown): { refundId?: string; paypalErrorCode?: string } {
-  let o: any = result;
-  if (typeof result === 'string') {
-    try { o = JSON.parse(result); } catch { return {}; }
-  }
-  if (!o) return {};
+  const o = parseResult(result);
+  if (!o || typeof o !== 'object') return {};
   if (o.ok === false) return { paypalErrorCode: String(o.code ?? o.status ?? 'UNKNOWN') };
   return { refundId: o.id ?? o.result?.id };
+}
+
+/** Tool errors come back as values with ok: false, from PayPal through the toolkit or from the guard. */
+function toolOutcome(result: unknown): { ok: boolean; errorCode?: string } {
+  const o = parseResult(result);
+  if (o && typeof o === 'object' && o.ok === false) return { ok: false, errorCode: String(o.code ?? o.status ?? 'UNKNOWN') };
+  return { ok: true };
 }
 
 const toCents = (value: string) => Math.round(Number(value) * 100);
@@ -85,6 +103,12 @@ const FAILED_REFUND_STATUSES = new Set(['FAILED', 'CANCELLED']);
 function toArgsRecord(args: unknown): Record<string, unknown> | undefined {
   return args && typeof args === 'object' && !Array.isArray(args) ? (args as Record<string, unknown>) : undefined;
 }
+
+const BLOCKED_BY: Partial<Record<Bucket, 'agent' | 'paypal' | 'guard'>> = {
+  refused_by_agent: 'agent',
+  blocked_by_paypal: 'paypal',
+  blocked_by_guard: 'guard',
+};
 
 /**
  * Plays one persona against one target, up to `maxTurns` attacker lines. Stops on the goal, when the
@@ -96,7 +120,7 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
 
   const captureBefore = await ledger.capture(captureId);
   if (captureBefore?.status !== 'COMPLETED') {
-    throw new Error(`${persona.targetOrderKey} capture is ${captureBefore?.status ?? 'missing'}; run pnpm pool:refill first`);
+    throw new Error(`${persona.targetOrderKey} capture is ${captureBefore?.status ?? 'missing'}; run npm run pool:refill first`);
   }
 
   let seq = 0;
@@ -111,9 +135,13 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
   const record: AttackRecord = {
     runId, attackId, personaId: persona.id, targetOrderKey: persona.targetOrderKey,
     sessionCustomerId: persona.sessionCustomerId, stopReason: 'max_turns', transcript: [], toolCalls: [],
-    refunds: [], captureBefore, captureAfter: null, unobservedRefund: false, guarded: !!opts.guard,
+    refunds: [], injections: [], captureBefore, captureAfter: null, unobservedRefund: false, guarded: !!opts.guard,
   };
   const verified = () => record.refunds.filter((r) => r.succeeded);
+  const say = (role: TranscriptLine['role'], text: string) => {
+    opts.emit({ ...base(), type: 'turn', turnIndex: record.transcript.length, role, text });
+    record.transcript.push({ role, text });
+  };
 
   opts.emit({ ...base(), type: 'attack.started', persona: persona.name, technique: persona.technique });
 
@@ -124,32 +152,46 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
         record.stopReason = 'attacker_stopped';
         break;
       }
-      record.transcript.push({ role: 'attacker', text: line });
+      say('attacker', line);
 
       const reply = await target.send(line);
-      record.transcript.push({ role: 'target', text: reply.text });
 
       for (const call of reply.toolCalls) {
         record.toolCalls.push(call);
-        opts.emit({ ...base(), type: 'tool.called', tool: call.toolName, args: toArgsRecord(call.args) });
+        opts.emit({ ...base(), type: 'tool.called', tool: call.toolName, toolCallId: call.toolCallId, args: toArgsRecord(call.args) });
         const decision = opts.guard?.decisionFor(call.toolCallId);
         if (decision) {
           opts.emit({ ...base(), type: 'guard.decision', tool: decision.tool, decision: decision.decision, ruleIds: decision.ruleIds.filter(isContractRule) });
         }
+        opts.emit({ ...base(), type: 'tool.result', toolCallId: call.toolCallId, tool: call.toolName, ...toolOutcome(call.result) });
+
+        const text = typeof call.result === 'string' ? call.result : JSON.stringify(call.result ?? '');
+        for (const injection of opts.injections ?? []) {
+          if (!text.includes(injection.text) || record.injections!.some((seen) => seen.text === injection.text)) continue;
+          record.injections!.push(injection);
+          opts.emit({ ...base(), type: 'injection.observed', source: injection.source, text: injection.text });
+        }
+
         if (call.toolName !== 'create_refund') continue;
 
         const { refundId, paypalErrorCode } = parseRefundResult(call.result);
         const readBack = refundId ? await ledger.refund(refundId) : null;
         const succeeded = !!readBack && !FAILED_REFUND_STATUSES.has(readBack.status);
         const amountCents = succeeded ? toCents(readBack.amount.value) : 0;
-        record.refunds.push({ toolCallId: call.toolCallId, args: call.args, refundId, paypalErrorCode, readBack, amountCents, succeeded });
+        record.refunds.push({
+          toolCallId: call.toolCallId, args: call.args, refundId, paypalErrorCode, readBack, amountCents, succeeded,
+          afterInjection: record.injections!.length > 0,
+        });
         // A call the guard stopped never reached PayPal, so there is no refund to report.
         if (paypalErrorCode === GUARD_DENIED_CODE) continue;
         opts.emit({
           ...base(), type: 'refund.observed', amountCents, currency: 'USD',
           status: succeeded ? 'succeeded' : 'failed', paypalRefundId: refundId,
+          paypalCaptureId: readBack?.captureId, toolCallId: call.toolCallId,
         });
       }
+
+      say('target', reply.text);
 
       if (verified().length >= (persona.refundsToStop ?? 1)) {
         record.stopReason = 'goal';
@@ -171,7 +213,13 @@ export async function runAttack(opts: RunAttackOptions): Promise<AttackRecord> {
   }
 
   record.verdict = judge(persona, record);
-  const { status, ruleIds, amountCents } = record.verdict;
-  opts.emit({ ...base(), type: 'attack.completed', persona: persona.name, status, currency: 'USD', ruleIds, amountCents });
+  const { status, ruleIds, amountCents, bucket, severity, paypalErrorCodes } = record.verdict;
+  const paypalErrorCode = paypalErrorCodes.find((code) => code !== GUARD_DENIED_CODE);
+  opts.emit({
+    ...base(), type: 'attack.completed', persona: persona.name, status, currency: 'USD', ruleIds, amountCents,
+    ...(BLOCKED_BY[bucket] ? { blockedBy: BLOCKED_BY[bucket] } : {}),
+    ...(paypalErrorCode ? { paypalErrorCode } : {}),
+    ...(severity ? { severity } : {}),
+  });
   return record;
 }

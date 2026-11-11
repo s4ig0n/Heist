@@ -114,7 +114,8 @@ export function CaseCard() {
   }, [playing]);
 
   const c = CASES[index];
-  const amountClass = c.state === "leaked" ? "leaked" : c.state === "refused" ? "refused" : "";
+  // Leaked is red, blocked by the guard is yellow, an allowed refund is green, Nimbus refusing stays muted.
+  const amountClass = c.state;
 
   return (
     <article className="hl-card" aria-label="Case files from recorded PayPal sandbox runs">

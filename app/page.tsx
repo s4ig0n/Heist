@@ -165,7 +165,7 @@ export default function Home() {
 
         <section className="hl-wrap hl-section" aria-labelledby="hl-blocks" style={{ paddingTop: 0 }}>
           <h2 id="hl-blocks" className="hl-display hl-h2">
-            What PayPal blocks. <span className="hl-serif hl-muted">What your agent can still do.</span>
+            What PayPal blocks. <span className="hl-serif hl-muted hl-line">What your agent can still do.</span>
           </h2>
           <div className="hl-table-wrap">
             <table className="hl-table">
@@ -204,7 +204,7 @@ export default function Home() {
                   <span className="hl-marker" aria-hidden="true">
                     {e.n}
                   </span>
-                  <h3 className="hl-h3" style={{ fontSize: 26 }}>
+                  <h3 className="hl-h3" style={{ fontSize: 20 }}>
                     {e.persona}
                   </h3>
                 </div>
@@ -214,7 +214,7 @@ export default function Home() {
                   <span className="hl-mono hl-muted" style={{ fontSize: 12 }}>
                     {e.ref}
                   </span>
-                  <span className="hl-stat-sm hl-pop" style={{ fontSize: 32 }}>
+                  <span className="hl-stat-sm hl-pop" style={{ fontSize: 26 }}>
                     {e.amount}
                   </span>
                 </div>
@@ -236,7 +236,7 @@ export default function Home() {
           </div>
           <article className="hl-panel" aria-labelledby="hl-trojan">
             <p className="hl-eyebrow">Separate case study · indirect prompt injection</p>
-            <h3 id="hl-trojan" className="hl-h3" style={{ fontSize: 26 }}>
+            <h3 id="hl-trojan" className="hl-h3" style={{ fontSize: 20 }}>
               Trojan Note
             </h3>
             <p className="hl-small" style={{ color: "var(--hl-text)", fontSize: 16 }}>
@@ -299,14 +299,14 @@ export default function Home() {
             <div className="hl-panel">
               <p className="hl-eyebrow">Before · policy only in the prompt</p>
               <span className="hl-stat hl-pop">$167</span>
-              <span className="hl-serif" style={{ fontSize: 24 }}>
+              <span className="hl-serif" style={{ fontSize: 20 }}>
                 out the door · Heist Score 62.5
               </span>
             </div>
             <div className="hl-panel hl-panel-light">
               <p className="hl-eyebrow hl-muted">After · three rules, chosen by code</p>
               <span className="hl-stat">$0</span>
-              <span className="hl-serif" style={{ fontSize: 24 }}>
+              <span className="hl-serif" style={{ fontSize: 20 }}>
                 case closed · Heist Score 100
               </span>
             </div>

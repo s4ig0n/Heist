@@ -8,14 +8,11 @@ const sum = (id: string) => ({ id, aggregation: "sum" as const });
 const max = (id: string) => ({ id, aggregation: "max" as const });
 const countd = (id: string) => ({ id, aggregation: "countd" as const });
 
-const kpi = (text: string, value: { id: string; aggregation?: "sum" | "max" | "countd" }) => ({
-  type: "value" as const,
+// KPI tiles use the custom Heist Stat widget (./widgets.tsx), not Studio's default value widget.
+const stat = (text: string, value: { id: string; aggregation?: "sum" | "max" | "countd" }, tone: "plain" | "loss" | "good" | "accent" = "plain") => ({
+  type: "heist-stat",
   dataMapping: { value: [value] },
-  format: {
-    title: { enabled: true, text },
-    caption: { enabled: false, text: "" },
-    style: { typography: { fontFamily: "Archivo, system-ui, sans-serif", fontSize: 30, fontWeight: "bold" as const, fontStyle: "normal" as const } },
-  },
+  format: { ...title(text), style: { tone } },
 });
 
 export const arenaReport = {
@@ -27,31 +24,31 @@ export const arenaReport = {
         vault: {
           type: "vault-meter",
           dataMapping: { leaked: [sum("attacks.leakedUsd")], blocked: [sum("attacks.guardDenials")] },
-          format: title("Vault Meter"),
+          format: title("VAULT METER"),
         },
-        "kpi-attacks": kpi("Attacks", countd("attacks.attackId")),
-        "kpi-refunded": kpi("Refunded by PayPal", sum("attacks.refundedUsd")),
-        "kpi-score": kpi("Heist Score", max("run.heistScore")),
+        "kpi-refunded": stat("REFUNDED BY PAYPAL", sum("attacks.refundedUsd")),
+        "kpi-score": stat("HEIST SCORE", max("run.heistScore"), "accent"),
+        "kpi-attacks": stat("ATTACKS RUN", countd("attacks.attackId")),
+        "kpi-leaks": stat("ATTACKS THAT LEAKED", countd("leaks.attackId"), "loss"),
         "attack-grid": {
           type: "grid",
           dataMapping: {
             cols: [
               { id: "attacks.persona" },
-              { id: "attacks.technique" },
               { id: "attacks.bucket" },
               sum("attacks.leakedUsd"),
-              sum("attacks.refundedUsd"),
-              { id: "attacks.ruleIds" },
               { id: "attacks.refundIds" },
+              { id: "attacks.ruleIds" },
             ],
           },
-          format: { ...title("Attack grid"), style: { columnAutoSize: true } },
+          format: { ...title("ATTACK GRID"), style: { columnAutoSize: true } },
         },
         "leaked-by-persona": {
           type: "bar-chart-grouped",
-          dataMapping: { categoryKey: [{ id: "attacks.persona" }], valueKey: [sum("attacks.leakedUsd")] },
-          sort: [{ field: sum("attacks.leakedUsd"), direction: "desc" }],
-          format: title("Dollars leaked by persona"),
+          // From the leaks table, so personas that leaked nothing don't take up rows.
+          dataMapping: { categoryKey: [{ id: "leaks.persona" }], valueKey: [sum("leaks.amountUsd")] },
+          sort: [{ field: sum("leaks.amountUsd"), direction: "desc" }],
+          format: title("DOLLARS LEAKED BY PERSONA"),
         },
         "tool-calls": {
           type: "grid",
@@ -64,17 +61,19 @@ export const arenaReport = {
               { id: "toolCalls.ruleIds" },
             ],
           },
-          format: { ...title("Tool calls and guard decisions"), style: { columnAutoSize: true } },
+          format: { ...title("TOOL CALLS AND GUARD DECISIONS"), style: { columnAutoSize: true } },
         },
       },
+      // The Vault Meter leads; four smaller stats sit beside it.
       widgetLayout: {
-        vault: at(0, 0, 8, 9),
-        "kpi-attacks": at(8, 0, 5, 9),
-        "kpi-refunded": at(13, 0, 6, 9),
-        "kpi-score": at(19, 0, 5, 9),
-        "attack-grid": at(0, 9, 24, 26),
-        "leaked-by-persona": at(0, 35, 10, 20),
-        "tool-calls": at(10, 35, 14, 36),
+        vault: at(0, 0, 12, 12),
+        "kpi-refunded": at(12, 0, 6, 6),
+        "kpi-score": at(18, 0, 6, 6),
+        "kpi-attacks": at(12, 6, 6, 6),
+        "kpi-leaks": at(18, 6, 6, 6),
+        "attack-grid": at(0, 12, 24, 26),
+        "leaked-by-persona": at(0, 38, 24, 14),
+        "tool-calls": at(0, 52, 24, 36),
       },
     },
   ],

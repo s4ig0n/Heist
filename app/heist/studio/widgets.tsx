@@ -12,6 +12,9 @@ import type { CustomCellRendererProps } from "ag-grid-react";
 import { heistColors as c } from "@/app/heist/heist-theme";
 import { BUCKET_LABEL, type Bucket } from "@/lib/heist/stream-state";
 
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+const DISPLAY = 'Archivo, "Arial Narrow", system-ui, sans-serif';
+
 // --- Data version ----------------------------------------------------------------------------
 // Studio re-renders a widget when its config changes, not when rows arrive. The Arena bumps this
 // version on every stream update, and data-reading widgets re-query when it changes.
@@ -107,7 +110,8 @@ function VaultMeter(params: AgWidgetParams<VaultMeterState>) {
 
   const shown = useCountUp(totals.leaked);
   const alarm = totals.leaked > 0;
-  const label = blockedField ? widgetApi.getFieldName(blockedField) : "";
+  // Studio appends the aggregation, e.g. "Guard Denials (sum)"; the caption reads better without it.
+  const label = blockedField ? widgetApi.getFieldName(blockedField).replace(/\s*\([a-z]+\)$/i, "") : "";
 
   return (
     <div
@@ -121,25 +125,28 @@ function VaultMeter(params: AgWidgetParams<VaultMeterState>) {
         gap: 8,
         padding: "12px 14px",
         boxSizing: "border-box",
-        borderRadius: 6,
+        borderRadius: 0,
         transition: "box-shadow 300ms, background 300ms",
       }}
     >
-      <span style={{ fontSize: 12, letterSpacing: 2, color: alarm ? c.danger : c.textMuted, fontWeight: 700 }}>
+      <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: alarm ? c.danger : c.textMuted, fontWeight: 600 }}>
         {alarm ? "● VAULT BREACHED" : "VAULT SECURE"}
       </span>
       <span
         style={{
-          fontSize: 40,
-          fontWeight: 800,
+          fontFamily: DISPLAY,
+          fontSize: 64,
+          fontWeight: 900,
+          fontStretch: "125%",
+          letterSpacing: -1,
           fontVariantNumeric: "tabular-nums",
           color: alarm ? c.danger : c.success,
-          lineHeight: 1.05,
+          lineHeight: 1,
         }}
       >
         ${shown.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </span>
-      <span style={{ fontSize: 12, color: c.textMuted }}>
+      <span style={{ fontSize: 13, color: c.textMuted }}>
         leaked in real PayPal sandbox refunds
         {blockedField ? ` · ${totals.blocked.toLocaleString("en-US")} ${label.toLowerCase()}` : ""}
       </span>
@@ -182,6 +189,96 @@ const vaultMeter: AgWidgetDefinition<"vault-meter", VaultMeterState> = {
     description: "A single large dollar figure with an alarm state when it is above zero.",
     usage: "Use for the headline amount of money an AI agent was talked into refunding. Not for trends or breakdowns.",
     configuration: "Map leaked to a currency measure such as sum of attacks.leakedUsd.",
+  },
+};
+
+// --- Stat tile ---------------------------------------------------------------------------
+// A KPI in the landing page's style: one large number in the display face, formatted from the field's
+// own format (currency, percentage, count), with an optional tone. Replaces Studio's default value widget.
+
+type StatTone = "plain" | "loss" | "good" | "accent";
+type StatTileState = {
+  type: "heist-stat";
+  dataMapping: { value?: unknown[] };
+  format: { title?: { enabled?: boolean; text?: string }; style?: { tone?: StatTone } };
+};
+
+export function formatStat(value: number | null, format: string | undefined): string {
+  if (value === null || Number.isNaN(value)) return "—";
+  if (format === "currencyFormat") return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (format === "percentageFormat") return `${Math.round(value * 100)}%`;
+  if (format === "integerFormat") return Math.round(value).toLocaleString("en-US");
+  return Number.isInteger(value) ? value.toLocaleString("en-US") : value.toFixed(1);
+}
+
+const TONE_COLOR: Record<StatTone, string> = { plain: c.text, loss: c.danger, good: c.success, accent: c.gold };
+
+function StatTile(params: AgWidgetParams<StatTileState>) {
+  const { widgetApi, dataMapping, format } = params;
+  const version = useDataVersion();
+  const field = dataMapping.value?.[0] as AgWidgetField | undefined;
+  const [value, setValue] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!field) return;
+    let cancelled = false;
+    widgetApi
+      .getData({ fields: [field] })
+      .then(({ results }) => {
+        if (cancelled) return;
+        const row = results.rows[0];
+        // No rows means nothing matched yet (for example, no leaks): that is a real zero.
+        setValue(row ? readNumber(row, field) : 0);
+      })
+      .catch(() => !cancelled && setValue(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [widgetApi, field, version]);
+
+  const tone = format.style?.tone ?? "plain";
+  return (
+    <div style={{ height: "100%", display: "flex", alignItems: "flex-end", padding: "4px 2px 6px", boxSizing: "border-box" }}>
+      <span
+        style={{
+          fontFamily: DISPLAY,
+          fontWeight: 900,
+          fontStretch: "125%",
+          fontSize: 40,
+          lineHeight: 1,
+          letterSpacing: -0.5,
+          fontVariantNumeric: "tabular-nums",
+          color: value === null ? c.textMuted : TONE_COLOR[tone],
+        }}
+      >
+        {formatStat(value, field?.format)}
+      </span>
+    </div>
+  );
+}
+
+const statTile: AgWidgetDefinition<"heist-stat", StatTileState> = {
+  id: "heist-stat",
+  label: "Heist Stat",
+  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16M7 15V9M12 15V5M17 15v-3"/></svg>`,
+  dataMapping: {
+    value: {
+      type: "field",
+      supportedRoles: ["numeric"],
+      required: true,
+      intent: "value",
+      aiDescription: "The number to show, usually an aggregated measure such as sum of attacks.refundedUsd or max of run.heistScore.",
+    },
+  },
+  form: (p) => p.createDefaults({ dataMappingItems: [{ key: "value", label: "Value" }] }),
+  comp: StatTile,
+  defaultSize: { width: 5, height: 8 },
+  minSize: { width: 3, height: 6 },
+  ai: {
+    label: "Heist Stat",
+    description: "One large number in the Heist display style, formatted from the field (dollars, percent or count).",
+    usage: "Use for a single headline figure next to the Vault Meter. Not for trends or breakdowns.",
+    configuration: "Map value to one aggregated numeric field.",
   },
 };
 
@@ -237,6 +334,20 @@ function StatusCell(props: CustomCellRendererProps) {
     >
       <span aria-hidden style={{ flex: "none", width: 6, height: 6, borderRadius: 3, background: color }} />
       {PILL_LABEL[bucket] ?? String(props.value ?? "")}
+    </span>
+  );
+}
+
+// Some attacks produce two refunds (Double Dipper). Show the first and a count so the column never clips;
+// the full list stays in the tooltip and for screen readers, and Attack Replay shows every ID.
+function RefundIdsCell(props: CustomCellRendererProps) {
+  const ids = String(props.value ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+  if (ids.length === 0) return null;
+  const full = ids.join(", ");
+  return (
+    <span title={full} aria-label={full} style={{ fontFamily: MONO, fontSize: 12, whiteSpace: "nowrap" }}>
+      {ids[0]}
+      {ids.length > 1 && <span style={{ color: c.textMuted }}> +{ids.length - 1} more</span>}
     </span>
   );
 }
@@ -334,7 +445,7 @@ function PatchDiff(params: AgWidgetParams<PatchDiffState>) {
           overflow: "auto",
           background: c.background,
           border: `1px solid ${c.border}`,
-          borderRadius: 6,
+          borderRadius: 0,
           padding: 12,
           fontSize: 12,
           lineHeight: 1.7,
@@ -365,7 +476,7 @@ function PatchDiff(params: AgWidgetParams<PatchDiffState>) {
             type="button"
             onClick={apply.run}
             disabled={apply.busy}
-            style={{ background: c.gold, color: c.background, border: "none", borderRadius: 6, padding: "8px 14px", fontWeight: 700, cursor: "pointer" }}
+            style={{ background: c.gold, color: c.background, border: "none", borderRadius: 0, padding: "8px 14px", fontWeight: 700, cursor: "pointer" }}
           >
             {apply.busy ? "Starting…" : apply.label}
           </button>
@@ -408,13 +519,14 @@ const patchDiff: AgWidgetDefinition<"patch-diff", PatchDiffState> = {
 };
 
 export const heistWidgets = createWidgets({
-  additionalTypes: [vaultMeter, patchDiff],
+  additionalTypes: [vaultMeter, statTile, patchDiff],
   overrides: [
     {
       id: "grid",
       options: {
         createCellRenderer: (field: AgWidgetField) => {
           if (isField(field, "attacks.bucket")) return StatusCell;
+          if (isField(field, "attacks.refundIds")) return RefundIdsCell;
           if (
             isField(field, "comparison.beforeOutcome") ||
             isField(field, "comparison.afterOutcome")

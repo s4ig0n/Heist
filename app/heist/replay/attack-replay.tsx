@@ -118,7 +118,7 @@ export function AttackReplay({ replays, initialRun, initialAttack }: { replays: 
                       textAlign: "left",
                       background: active ? c.surfaceRaised : "transparent",
                       border: `1px solid ${active ? c.gold : c.border}`,
-                      borderRadius: 6,
+                      borderRadius: 0,
                       padding: "8px 10px",
                       color: c.text,
                       cursor: "pointer",
@@ -159,7 +159,7 @@ function AttackDetail({ record }: { record: AttackRecord }) {
     <article aria-labelledby="attack-title" style={{ display: "grid", gap: 16 }}>
       <header style={{ ...panel, display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center" }}>
         <div>
-          <h2 id="attack-title" style={{ fontSize: 24, fontWeight: 800 }}>
+          <h2 id="attack-title" style={{ margin: 0, fontSize: 30, fontWeight: 900, fontStretch: "125%", textTransform: "uppercase", lineHeight: 1 }}>
             {personaName(record.personaId)}
           </h2>
           <p style={{ color: c.textMuted, fontSize: 13 }}>
@@ -168,7 +168,7 @@ function AttackDetail({ record }: { record: AttackRecord }) {
         </div>
         <div style={{ marginLeft: "auto", textAlign: "right" }}>
           <p style={{ color, fontWeight: 800, fontSize: 14, letterSpacing: 1 }}>{(BUCKET_LABEL[v.bucket as Bucket] ?? v.bucket).toUpperCase()}</p>
-          <p style={{ fontSize: 32, fontWeight: 800, color: v.leakedCents > 0 ? c.danger : c.success, fontVariantNumeric: "tabular-nums" }}>
+          <p style={{ fontSize: 40, fontWeight: 900, fontStretch: "125%", lineHeight: 1, color: v.leakedCents > 0 ? c.danger : c.success, fontVariantNumeric: "tabular-nums" }}>
             {usd(v.leakedCents)} <span style={{ fontSize: 13, color: c.textMuted, fontWeight: 400 }}>leaked</span>
           </p>
           {v.severity && <p style={{ fontSize: 12, color: c.textMuted }}>Severity: {v.severity}</p>}
@@ -198,7 +198,7 @@ function AttackDetail({ record }: { record: AttackRecord }) {
         </section>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)", gap: 16, alignItems: "start" }}>
+      <div className="heist-replay-detail" style={{ display: "grid", gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)", gap: 16, alignItems: "start" }}>
         <section aria-label="Conversation" style={panel}>
           <h3 style={heading}>CONVERSATION</h3>
           <Legend showInjection={injectedInTools} />
@@ -212,7 +212,7 @@ function AttackDetail({ record }: { record: AttackRecord }) {
                     background: attacker ? c.surfaceRaised : "transparent",
                     border: `1px solid ${c.border}`,
                     borderLeft: `3px solid ${attacker ? c.danger : c.info}`,
-                    borderRadius: 6,
+                    borderRadius: 0,
                     padding: 12,
                   }}
                 >
@@ -365,7 +365,7 @@ function RefundItem({ refund, leaked }: { refund: RecordedRefund; leaked: boolea
   }
 
   return (
-    <li style={{ border: `1px solid ${leaked ? c.danger : c.border}`, borderRadius: 6, padding: 12 }}>
+    <li style={{ border: `1px solid ${leaked ? c.danger : c.border}`, borderRadius: 0, padding: 12 }}>
       <p style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14 }}>
         <span>
           <strong style={{ fontVariantNumeric: "tabular-nums" }}>{usd(refund.amountCents)}</strong>{" "}

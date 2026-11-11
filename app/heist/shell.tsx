@@ -59,7 +59,7 @@ export function HeistShell({ page, children, scroll = false }: { page: HeistPage
 export const panel: CSSProperties = {
   background: c.surface,
   border: `1px solid ${c.border}`,
-  borderRadius: 8,
+  borderRadius: 0,
   padding: 16,
 };
 
@@ -67,12 +67,20 @@ export const control: CSSProperties = {
   background: c.surfaceRaised,
   color: c.text,
   border: `1px solid ${c.border}`,
-  borderRadius: 6,
+  borderRadius: 0,
   padding: "6px 10px",
   fontSize: 13,
 };
 
-export const heading: CSSProperties = { fontSize: 12, letterSpacing: 2, color: c.gold, fontWeight: 700, marginBottom: 12 };
+export const heading: CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
+  fontSize: 12,
+  letterSpacing: 2,
+  color: c.textMuted,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  marginBottom: 12,
+};
 
 export const REPLAY_LABEL: Record<string, string> = {
   "baseline-run": "Nimbus as shipped (no guard)",

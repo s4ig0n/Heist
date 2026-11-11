@@ -96,18 +96,26 @@ body {
 }
 
 .heist-state-panel span {
-  color: #aab7c5;
+  color: #b4b1aa;
 }
 
 .heist-state-error {
-  border-color: #ea7777;
+  border-color: #ff7a61;
 }
 
 .heist-state-error strong {
-  color: #ea7777;
+  color: #ff7a61;
 }
 
 @media (max-width: 860px) {
+  .heist-report-hero {
+    grid-column: auto !important;
+  }
+
+  .heist-replay-detail {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
   .heist-header .heist-sandbox-note {
     width: 100%;
     margin-left: 0 !important;

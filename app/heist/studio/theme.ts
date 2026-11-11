@@ -5,6 +5,7 @@ import { studioTheme } from "ag-studio";
 import { heistColors as c } from "@/app/heist/heist-theme";
 
 const FONT = 'Archivo, "Arial Narrow", system-ui, sans-serif';
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
 const line = (color: string) => ({ width: 1, color });
 
 // Chart series, in order: gold first (money), then the status colors.
@@ -42,12 +43,13 @@ export const heistNoirTheme = studioTheme.withParams({
 
   studioWidgetBackgroundColor: c.surface,
   studioWidgetBorder: line(c.border),
-  studioWidgetBorderRadius: 8,
-  studioWidgetPadding: 12,
-  studioWidgetTitleFontFamily: FONT,
-  studioWidgetTitleFontSize: 13,
-  studioWidgetTitleFontWeight: 700,
-  studioWidgetTitleTextColor: c.gold,
+  studioWidgetBorderRadius: 0,
+  studioWidgetPadding: 14,
+  // Widget titles read like the landing page's labels: small uppercase mono in muted chalk.
+  studioWidgetTitleFontFamily: MONO,
+  studioWidgetTitleFontSize: 12,
+  studioWidgetTitleFontWeight: 600,
+  studioWidgetTitleTextColor: c.textMuted,
   studioWidgetSubtitleFontFamily: FONT,
   studioWidgetSubtitleFontSize: 12,
   studioWidgetSubtitleTextColor: c.textMuted,
@@ -95,7 +97,8 @@ export const heistNoirTheme = studioTheme.withParams({
   gridCellTextColor: c.text,
   gridHeaderBackgroundColor: c.surface,
   gridHeaderTextColor: c.textMuted,
-  gridHeaderFontWeight: 700,
+  gridHeaderFontFamily: MONO,
+  gridHeaderFontWeight: 600,
   gridHeaderFontSize: 12,
   gridRowHeight: 36,
   gridRowBorder: line(c.border),

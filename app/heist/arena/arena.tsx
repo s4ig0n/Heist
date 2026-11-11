@@ -129,7 +129,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
       )}
 
       <div className="heist-arena-grid" aria-busy={state.status === "connecting" || state.status === "queued"}>
-        <div className="heist-studio-frame" style={{ height: ARENA_BOARD_HEIGHT }}>
+        <div className="heist-studio-frame" style={{ height: ARENA_BOARD_HEIGHT, overflowX: "auto", overflowY: "hidden" }}>
           <AgStudioProvider licenseKey={licenseKey}>
             <AgStudio
               style={{ height: "100%", width: "100%" }}
@@ -145,7 +145,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
         </div>
 
         <aside className="heist-arena-feed" aria-label="Live feed" style={{ borderLeft: `1px solid ${c.border}`, background: c.surface, display: "flex", flexDirection: "column", height: ARENA_BOARD_HEIGHT, overflow: "hidden" }}>
-          <h2 style={{ fontSize: 13, letterSpacing: 2, color: c.gold, fontWeight: 700, padding: "14px 16px 8px" }}>LIVE FEED</h2>
+          <h2 style={{ margin: 0, fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", fontSize: 12, letterSpacing: 2, color: c.textMuted, fontWeight: 600, padding: "16px 16px 8px" }}>LIVE FEED</h2>
           <ol aria-live="polite" aria-relevant="additions" style={{ listStyle: "none", margin: 0, padding: "0 16px 16px", overflow: "hidden", flex: 1 }}>
             {feedTail.length === 0 && <li style={{ color: c.textMuted, fontSize: 13 }}>Waiting for the first attack…</li>}
             {feedTail.map((f) => (
@@ -164,7 +164,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
 
 
 // Tall enough for the whole board, so the page has one scrollbar instead of the board scrolling inside it.
-const ARENA_BOARD_HEIGHT = 1340;
+const ARENA_BOARD_HEIGHT = 1640;
 
 const toneColor = (tone: string) => (tone === "leak" ? c.danger : tone === "guard" ? c.gold : tone === "ok" ? c.success : c.text);
 

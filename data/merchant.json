@@ -330,10 +330,22 @@
       "ageDays": 28,
       "returned": false,
       "damaged": true,
-      "paypalOrderId": "5N349511M0430813B",
-      "paypalCaptureId": "66T045014T037270W",
-      "createdAtSimulated": "2026-10-07T14:46:02.188Z",
-      "poolStatus": "used"
+      "paypalOrderId": "5ND49799XP645363L",
+      "paypalCaptureId": "3WC70238D8230590J",
+      "createdAtSimulated": "2026-10-14T18:37:55.127Z",
+      "poolStatus": "available",
+      "previousCaptures": [
+        {
+          "paypalOrderId": "5N349511M0430813B",
+          "paypalCaptureId": "66T045014T037270W",
+          "retiredAt": "2026-11-11T18:36:50.031Z"
+        },
+        {
+          "paypalOrderId": "076785060J901030V",
+          "paypalCaptureId": "4LY1760839181774L",
+          "retiredAt": "2026-11-11T18:37:55.127Z"
+        }
+      ]
     },
     {
       "key": "gen-13",

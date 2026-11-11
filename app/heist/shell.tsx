@@ -90,4 +90,5 @@ export const REPLAY_LABEL: Record<string, string> = {
   "trojan-note-plain": "Case study: Trojan Note, plain Nimbus",
   "trojan-note-guarded": "Case study: Trojan Note, with the guard",
   "ten-persona-plain": "Case study: ten personas on plain Nimbus (no score)",
+  "tool-whisperer-guarded": "Case study: Tool Whisperer, with the guard",
 };

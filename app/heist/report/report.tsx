@@ -254,15 +254,20 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
           type="button"
           onClick={() => setAnalystOpen((open) => !open)}
           aria-pressed={analystOpen}
-          title="A custom AG Studio agent with Heist's own tools, working with Studio's built-in agents"
+          aria-label={analystOpen ? "Close the Forensics Analyst" : undefined}
+          title={analystOpen ? "Close the analyst" : "A custom AG Studio agent with Heist's own tools, working with Studio's built-in agents"}
           style={{
             ...control,
             position: "fixed",
             bottom: 24,
             right: analystOpen ? ANALYST_PANEL_WIDTH + 40 : 24,
             zIndex: 40,
-            minHeight: 48,
-            padding: "0 20px",
+            height: 48,
+            width: analystOpen ? 48 : undefined,
+            padding: analystOpen ? 0 : "0 20px",
+            borderRadius: analystOpen ? "50%" : 0,
+            fontSize: analystOpen ? 20 : undefined,
+            lineHeight: 1,
             background: analystOpen ? c.surfaceRaised : c.gold,
             color: analystOpen ? c.text : c.background,
             border: `1px solid ${analystOpen ? c.border : c.gold}`,
@@ -271,7 +276,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
             boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
           }}
         >
-          {analystOpen ? "Close the analyst" : "Ask the Forensics Analyst"}
+          {analystOpen ? "\u2715" : "Ask the Forensics Analyst"}
         </button>
       ) : null}
 

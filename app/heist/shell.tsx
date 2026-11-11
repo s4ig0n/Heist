@@ -89,4 +89,5 @@ export const REPLAY_LABEL: Record<string, string> = {
   "patched-run": "Patched rerun",
   "trojan-note-plain": "Case study: Trojan Note, plain Nimbus",
   "trojan-note-guarded": "Case study: Trojan Note, with the guard",
+  "ten-persona-plain": "Case study: ten personas on plain Nimbus (no score)",
 };

@@ -209,11 +209,11 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
           padding: 16,
         }}
       >
-        <div style={{ ...panel, gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }} className="heist-report-hero">
+        <div style={{ ...panel, ...STAT_TILE, gridColumn: "span 2", minWidth: 0 }} className="heist-report-hero">
           <p style={{ margin: 0, fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: c.textMuted, textTransform: "uppercase" }}>
             Leaked, before and after the patch
           </p>
-          <p style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 900, fontStretch: "125%", fontSize: 56, lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums" }}>
+          <p style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 900, fontStretch: "125%", fontSize: "clamp(36px, 3.6vw, 56px)", lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
             <span style={{ color: c.danger }}>{t ? money(t.before.leakedUsd) : "…"}</span>
             <span style={{ color: c.textMuted, fontWeight: 400, fontStretch: "100%" }}> → </span>
             <span style={{ color: c.success }}>{t ? money(t.after.leakedUsd) : "…"}</span>
@@ -348,11 +348,11 @@ function Stat({
   const color =
     tone === "good" ? c.success : tone === "bad" ? c.danger : c.gold;
   return (
-    <div style={{ ...panel, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ ...panel, ...STAT_TILE, minWidth: 0 }}>
       <p style={{ margin: 0, fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: c.textMuted, textTransform: "uppercase" }}>
         {label}
       </p>
-      <p style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 900, fontStretch: "125%", fontSize: 40, lineHeight: 1, color, fontVariantNumeric: "tabular-nums" }}>
+      <p style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 900, fontStretch: "125%", fontSize: "clamp(26px, 2.4vw, 40px)", lineHeight: 1, color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
         {value}
       </p>
       <p style={{ margin: 0, fontSize: 13, color: c.textMuted }}>{sub}</p>
@@ -361,6 +361,8 @@ function Stat({
 }
 
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+// The three before/after tiles: snug padding so they end right under their text.
+const STAT_TILE: React.CSSProperties = { display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, padding: "14px 16px" };
 
 // Tall enough for the whole board, so the page has the only scrollbar while the analyst is closed.
 const REPORT_BOARD_HEIGHT = 1320;

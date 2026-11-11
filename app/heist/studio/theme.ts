@@ -4,7 +4,7 @@
 import { studioTheme } from "ag-studio";
 import { heistColors as c } from "@/app/heist/heist-theme";
 
-const FONT = "Inter, Arial, sans-serif";
+const FONT = 'Archivo, "Arial Narrow", system-ui, sans-serif';
 const line = (color: string) => ({ width: 1, color });
 
 // Chart series, in order: gold first (money), then the status colors.
@@ -69,6 +69,26 @@ export const heistNoirTheme = studioTheme.withParams({
   studioToggleButtonActiveBackgroundColor: c.surfaceRaised,
   studioToggleButtonActiveBorderColor: c.gold,
   studioToggleButtonActiveColor: c.gold,
+
+  // Forensics Analyst panel: wide enough to read, square inputs, chalk message bubbles, yellow primary button.
+  studioAiPanelWidth: 440,
+  studioAiPanelInputMessageBackgroundColor: c.surfaceRaised,
+  studioAiPanelRichTextAccentBackgroundColor: c.surfaceRaised,
+  studioAiPanelButtonHoverBackgroundColor: c.surfaceRaised,
+  inputBackgroundColor: c.background,
+  inputTextColor: c.text,
+  inputPlaceholderTextColor: c.textMuted,
+  inputBorder: line(c.border),
+  inputFocusBorder: line(c.gold),
+  inputBorderRadius: 0,
+  buttonBackgroundColor: c.gold,
+  buttonTextColor: c.background,
+  buttonBorder: line(c.gold),
+  buttonHoverBackgroundColor: c.text,
+  buttonHoverTextColor: c.background,
+  buttonHoverBorder: line(c.text),
+  buttonBorderRadius: 0,
+  buttonFontWeight: 700,
 
   gridFontFamily: FONT,
   gridFontSize: 13,

@@ -51,7 +51,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
   const streamFailed = state.status === "failed";
 
   return (
-    <HeistShell page="arena">
+    <HeistShell page="arena" scroll>
       <section
         aria-label="Run controls"
         style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", padding: "12px 16px", borderBottom: `1px solid ${c.border}` }}
@@ -122,14 +122,14 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
       {alarm && (
         <div
           role="alert"
-          style={{ background: "rgba(234,119,119,0.12)", borderBottom: `1px solid ${c.danger}`, color: c.danger, padding: "10px 16px", fontWeight: 700 }}
+          style={{ background: "rgba(255,122,97,0.12)", borderBottom: `1px solid ${c.danger}`, color: c.danger, padding: "10px 16px", fontWeight: 700 }}
         >
           ALARM · Nimbus issued an out-of-policy refund. ${totals.leakedUsd.toFixed(2)} leaked so far, verified against PayPal.
         </div>
       )}
 
       <div className="heist-arena-grid" aria-busy={state.status === "connecting" || state.status === "queued"}>
-        <div className="heist-studio-frame" style={{ minHeight: 0 }}>
+        <div className="heist-studio-frame" style={{ height: ARENA_BOARD_HEIGHT }}>
           <AgStudioProvider licenseKey={licenseKey}>
             <AgStudio
               style={{ height: "100%", width: "100%" }}
@@ -144,9 +144,9 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
           </AgStudioProvider>
         </div>
 
-        <aside className="heist-arena-feed" aria-label="Live feed" style={{ borderLeft: `1px solid ${c.border}`, background: c.surface, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <aside className="heist-arena-feed" aria-label="Live feed" style={{ borderLeft: `1px solid ${c.border}`, background: c.surface, display: "flex", flexDirection: "column", height: ARENA_BOARD_HEIGHT, overflow: "hidden" }}>
           <h2 style={{ fontSize: 13, letterSpacing: 2, color: c.gold, fontWeight: 700, padding: "14px 16px 8px" }}>LIVE FEED</h2>
-          <ol aria-live="polite" aria-relevant="additions" style={{ listStyle: "none", margin: 0, padding: "0 16px 16px", overflowY: "auto", flex: 1 }}>
+          <ol aria-live="polite" aria-relevant="additions" style={{ listStyle: "none", margin: 0, padding: "0 16px 16px", overflow: "hidden", flex: 1 }}>
             {feedTail.length === 0 && <li style={{ color: c.textMuted, fontSize: 13 }}>Waiting for the first attack…</li>}
             {feedTail.map((f) => (
               <li key={f.id} style={{ fontSize: 13, padding: "8px 0", borderBottom: `1px solid ${c.border}`, color: toneColor(f.tone) }}>
@@ -162,6 +162,9 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
 }
 
 
+
+// Tall enough for the whole board, so the page has one scrollbar instead of the board scrolling inside it.
+const ARENA_BOARD_HEIGHT = 1340;
 
 const toneColor = (tone: string) => (tone === "leak" ? c.danger : tone === "guard" ? c.gold : tone === "ok" ? c.success : c.text);
 

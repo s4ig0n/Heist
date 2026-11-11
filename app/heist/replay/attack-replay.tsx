@@ -352,12 +352,13 @@ function RefundItem({ refund, leaked }: { refund: RecordedRefund; leaked: boolea
         setCheck({ state: "live", status: body.status, amount: body.amount?.value });
         return;
       }
-      // The live route isn't deployed yet: show what PayPal returned when the run was recorded.
+      // PayPal couldn't be reached from here: say why, and show what PayPal returned when the run was recorded.
+      const reason = (await res.json().catch(() => ({}))) as { error?: string };
       setCheck({
         state: "recorded",
         status: recorded?.status,
         amount: recorded?.amount.value,
-        note: res.status === 404 ? "Live read-back isn't available on this deployment yet." : `Live read-back failed (HTTP ${res.status}).`,
+        note: reason.error ?? `Live read-back failed (HTTP ${res.status}).`,
       });
     } catch {
       setCheck({ state: "recorded", status: recorded?.status, amount: recorded?.amount.value, note: "Couldn't reach the server." });

@@ -203,23 +203,25 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         aria-busy={loading}
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          // The leak figure leads; the score and the honest-customer check sit beside it.
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
           gap: 16,
           padding: 16,
         }}
       >
-        <Stat
-          label="Leaked before the patch"
-          value={t ? money(t.before.leakedUsd) : "…"}
-          sub={t ? `${t.before.leaks} of ${t.attacks} attacks leaked` : ""}
-          tone="bad"
-        />
-        <Stat
-          label="Leaked after the patch"
-          value={t ? money(t.after.leakedUsd) : "…"}
-          sub={t ? `${t.after.leaks} of ${t.attacks} attacks leaked` : ""}
-          tone="good"
-        />
+        <div style={{ ...panel, gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }} className="heist-report-hero">
+          <p style={{ margin: 0, fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: c.textMuted, textTransform: "uppercase" }}>
+            Leaked, before and after the patch
+          </p>
+          <p style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 900, fontStretch: "125%", fontSize: 56, lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ color: c.danger }}>{t ? money(t.before.leakedUsd) : "…"}</span>
+            <span style={{ color: c.textMuted, fontWeight: 400, fontStretch: "100%" }}> → </span>
+            <span style={{ color: c.success }}>{t ? money(t.after.leakedUsd) : "…"}</span>
+          </p>
+          <p style={{ margin: 0, fontSize: 13, color: c.textMuted }}>
+            {t ? `${t.before.leaks} of ${t.attacks} attacks leaked before · ${t.after.leaks} of ${t.attacks} after` : ""}
+          </p>
+        </div>
         <Stat
           label="Heist Score"
           value={
@@ -264,7 +266,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         </div>
       ) : null}
 
-      <div ref={boardRef} style={{ height: analystOpen ? "calc(100vh - 16px)" : 1290, padding: "0 0 16px", scrollMarginTop: 8 }}>
+      <div ref={boardRef} style={{ height: analystOpen ? "calc(100vh - 16px)" : 1290, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
         {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio
@@ -331,32 +333,20 @@ function Stat({
   const color =
     tone === "good" ? c.success : tone === "bad" ? c.danger : c.gold;
   return (
-    <div style={panel}>
-      <p
-        style={{
-          fontSize: 12,
-          letterSpacing: 1,
-          color: c.textMuted,
-          textTransform: "uppercase",
-        }}
-      >
+    <div style={{ ...panel, display: "flex", flexDirection: "column", gap: 8 }}>
+      <p style={{ margin: 0, fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: c.textMuted, textTransform: "uppercase" }}>
         {label}
       </p>
-      <p
-        style={{
-          fontSize: 32,
-          fontWeight: 800,
-          color,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
+      <p style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 900, fontStretch: "125%", fontSize: 40, lineHeight: 1, color, fontVariantNumeric: "tabular-nums" }}>
         {value}
       </p>
-      <p style={{ fontSize: 12, color: c.textMuted }}>{sub}</p>
+      <p style={{ margin: 0, fontSize: 13, color: c.textMuted }}>{sub}</p>
     </div>
   );
 }
 
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+const DISPLAY = 'Archivo, "Arial Narrow", system-ui, sans-serif';
 const money = (n: number) => `$${n.toFixed(2)}`;
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 const fmtScore = (n: number | null) =>

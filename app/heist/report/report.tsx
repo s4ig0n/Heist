@@ -275,7 +275,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         </button>
       ) : null}
 
-      <div ref={boardRef} style={{ height: analystOpen ? "calc(100vh - 16px)" : REPORT_BOARD_HEIGHT, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
+      <div ref={boardRef} onKeyDownCapture={suggestOnTab} style={{ height: analystOpen ? "calc(100vh - 16px)" : REPORT_BOARD_HEIGHT, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
         {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio
@@ -287,6 +287,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
               ai={analyst}
               initialState={reportBoard}
               mode={analyst && analystOpen ? "edit" : "view"}
+              localeText={{ aiMessageInputPlaceholder: `${ANALYST_SUGGESTION}  (Tab to use)` }}
               panels={{ view: {}, edit: { right: ["ai"] } }}
             />
           </AgStudioProvider>
@@ -360,6 +361,19 @@ const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
 const REPORT_BOARD_HEIGHT = 1320;
 // Matches studioAiPanelWidth in ../studio/theme.ts.
 const ANALYST_PANEL_WIDTH = 440;
+const ANALYST_SUGGESTION = "Which persona cost us most? Chart it.";
+
+/** Tab in the analyst's empty message box fills in the suggested question, like accepting a hint. */
+function suggestOnTab(event: React.KeyboardEvent<HTMLDivElement>) {
+  const box = event.target as HTMLElement;
+  if (event.key !== "Tab" || event.shiftKey || !(box instanceof HTMLTextAreaElement) || box.value !== "") return;
+  if (!box.placeholder.startsWith(ANALYST_SUGGESTION)) return;
+  event.preventDefault();
+  // Studio's input is a controlled React field, so set the value the way a keystroke would.
+  const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  setValue?.call(box, ANALYST_SUGGESTION);
+  box.dispatchEvent(new Event("input", { bubbles: true }));
+}
 const DISPLAY = 'Archivo, "Arial Narrow", system-ui, sans-serif';
 const money = (n: number) => `$${n.toFixed(2)}`;
 const pct = (n: number) => `${Math.round(n * 100)}%`;

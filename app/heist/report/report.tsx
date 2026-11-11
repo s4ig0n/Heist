@@ -265,7 +265,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
             height: 48,
             width: analystOpen ? 48 : undefined,
             padding: analystOpen ? 0 : "0 20px",
-            borderRadius: analystOpen ? "50%" : 0,
+            borderRadius: 999,
             fontSize: analystOpen ? 20 : undefined,
             lineHeight: 1,
             background: analystOpen ? c.surfaceRaised : c.gold,

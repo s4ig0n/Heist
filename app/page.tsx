@@ -131,7 +131,7 @@ export default function Home() {
         <section className="hl-wrap hl-section" aria-labelledby="hl-problem">
           <p className="hl-eyebrow">The problem</p>
           <h2 id="hl-problem" className="hl-display hl-h2">
-            A refund rule in a prompt <span className="hl-serif hl-muted">only holds if the model listens.</span>
+            A refund rule in a prompt <span className="hl-serif hl-muted hl-line">only holds if the model listens.</span>
           </h2>
           <p className="hl-p">
             PayPal’s Agent Toolkit lets an AI support agent call <code className="hl-code">create_refund</code> directly. The payment

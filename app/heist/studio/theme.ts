@@ -4,7 +4,7 @@
 import { studioTheme } from "ag-studio";
 import { heistColors as c } from "@/app/heist/heist-theme";
 
-const FONT = "Inter, Arial, sans-serif";
+const FONT = 'Archivo, "Arial Narrow", system-ui, sans-serif';
 const line = (color: string) => ({ width: 1, color });
 
 // Chart series, in order: gold first (money), then the status colors.

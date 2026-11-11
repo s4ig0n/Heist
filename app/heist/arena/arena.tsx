@@ -122,7 +122,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
       {alarm && (
         <div
           role="alert"
-          style={{ background: "rgba(234,119,119,0.12)", borderBottom: `1px solid ${c.danger}`, color: c.danger, padding: "10px 16px", fontWeight: 700 }}
+          style={{ background: "rgba(255,122,97,0.12)", borderBottom: `1px solid ${c.danger}`, color: c.danger, padding: "10px 16px", fontWeight: 700 }}
         >
           ALARM · Nimbus issued an out-of-policy refund. ${totals.leakedUsd.toFixed(2)} leaked so far, verified against PayPal.
         </div>

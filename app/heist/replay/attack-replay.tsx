@@ -33,7 +33,7 @@ const BUCKET_COLOR: Record<string, string> = {
 };
 
 const SPAN_STYLE: Record<SpanKind, React.CSSProperties> = {
-  injection: { background: "rgba(234,119,119,0.25)", outline: `1px solid ${c.danger}`, color: c.text, borderRadius: 3, padding: "0 2px" },
+  injection: { background: "rgba(255,122,97,0.25)", outline: `1px solid ${c.danger}`, color: c.text, borderRadius: 3, padding: "0 2px" },
   pressure: { background: "rgba(230,186,112,0.18)", borderBottom: `2px solid ${c.warning}`, color: c.text, padding: "0 1px" },
 };
 

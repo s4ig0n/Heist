@@ -1,21 +1,21 @@
 export const heistColors = {
-  background: "#10151D",
-  surface: "#1B2531",
-  surfaceRaised: "#263343",
-  border: "#394552",
+  background: "#1C1C1D",
+  surface: "#252527",
+  surfaceRaised: "#2F2F32",
+  border: "#3A3A3D",
 
-  text: "#F6EAD8",
-  textMuted: "#AAB7C5",
+  text: "#ECEAE4",
+  textMuted: "#B4B1AA",
 
-  gold: "#D6AD67",
+  gold: "#FFE14D",
   success: "#91C7AA",
-  danger: "#EA7777",
+  danger: "#FF7A61",
   warning: "#E6BA70",
   info: "#83B9E0",
 } as const;
 
 export const heistTypography = {
-  fontFamily: "Inter, Arial, sans-serif",
+  fontFamily: "Archivo, \"Arial Narrow\", system-ui, sans-serif",
   headingWeight: 700,
   bodyWeight: 400,
 } as const;

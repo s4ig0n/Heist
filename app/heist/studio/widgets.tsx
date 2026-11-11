@@ -123,7 +123,7 @@ function VaultMeter(params: AgWidgetParams<VaultMeterState>) {
         boxSizing: "border-box",
         borderRadius: 6,
         boxShadow: alarm ? `inset 0 0 0 2px ${c.danger}` : "none",
-        background: alarm ? "rgba(234, 119, 119, 0.08)" : "transparent",
+        background: alarm ? "rgba(255,122,97, 0.08)" : "transparent",
         transition: "box-shadow 300ms, background 300ms",
       }}
     >
@@ -331,7 +331,7 @@ function PatchDiff(params: AgWidgetParams<PatchDiffState>) {
             </div>
           ) : (
             <div key={r.rule}>
-              <div style={{ color: c.danger, background: "rgba(234,119,119,0.10)" }}>
+              <div style={{ color: c.danger, background: "rgba(255,122,97,0.10)" }}>
                 - &quot;{r.rule}&quot;: {"{"} enabled: {String(r.before)} {"}"}
               </div>
               <div style={{ color: c.success, background: "rgba(145,199,170,0.10)" }}>

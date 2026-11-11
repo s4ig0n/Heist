@@ -24,12 +24,17 @@ export function HeistShell({ page, children, scroll = false }: { page: HeistPage
         flexDirection: "column",
         background: c.background,
         color: c.text,
-        fontFamily: "Inter, Arial, sans-serif",
+        fontFamily: 'Archivo, "Arial Narrow", system-ui, sans-serif',
       }}
     >
       <header className="heist-header" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24, padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1 }}>
-          HEIST <span style={{ color: c.gold }}>/ {current.label.toUpperCase()}</span>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, fontStretch: "125%", letterSpacing: 1, display: "flex", alignItems: "baseline", gap: 12 }}>
+          <Link href="/" style={{ color: c.text, textDecoration: "none" }} aria-label="Heist home">
+            HEIST<span style={{ color: c.gold }}>.</span>
+          </Link>
+          <span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: "italic", fontWeight: 400, fontStretch: "100%", letterSpacing: 0, color: c.textMuted }}>
+            {current.label.toLowerCase()}
+          </span>
         </h1>
         <nav aria-label="Heist" style={{ display: "flex", gap: 18, fontSize: 14 }}>
           {PAGES.map((p) => (

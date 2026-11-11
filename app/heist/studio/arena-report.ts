@@ -14,7 +14,7 @@ const kpi = (text: string, value: { id: string; aggregation?: "sum" | "max" | "c
   format: {
     title: { enabled: true, text },
     caption: { enabled: false, text: "" },
-    style: { typography: { fontFamily: "Inter, Arial, sans-serif", fontSize: 30, fontWeight: "bold" as const, fontStyle: "normal" as const } },
+    style: { typography: { fontFamily: "Archivo, system-ui, sans-serif", fontSize: 30, fontWeight: "bold" as const, fontStyle: "normal" as const } },
   },
 });
 

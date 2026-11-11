@@ -3,7 +3,7 @@
 // Report: the same personas before and after the patch. Headline before/after numbers, an AG Studio
 // board (persona leaderboard, before vs after, severity, Patch Diff) and the honest-customer check.
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AgStudioAiModule, enableStudioDevValidations } from "ag-studio";
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
@@ -59,6 +59,11 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
   const [attempt, setAttempt] = useState(0);
   // Studio only shows its assistant panel in edit mode, so asking the analyst switches the board to edit.
   const [analystOpen, setAnalystOpen] = useState(false);
+  const boardRef = useRef<HTMLDivElement>(null);
+  // While chatting, the board fits the window so the assistant's suggestions, replies and input are all on screen.
+  useEffect(() => {
+    if (analystOpen) boardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [analystOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -259,7 +264,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         </div>
       ) : null}
 
-      <div style={{ height: 1290, padding: "0 0 16px" }}>
+      <div ref={boardRef} style={{ height: analystOpen ? "calc(100vh - 16px)" : 1290, padding: "0 0 16px", scrollMarginTop: 8 }}>
         {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio

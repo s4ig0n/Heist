@@ -122,8 +122,6 @@ function VaultMeter(params: AgWidgetParams<VaultMeterState>) {
         padding: "12px 14px",
         boxSizing: "border-box",
         borderRadius: 6,
-        boxShadow: alarm ? `inset 0 0 0 2px ${c.danger}` : "none",
-        background: alarm ? "rgba(255,122,97, 0.08)" : "transparent",
         transition: "box-shadow 300ms, background 300ms",
       }}
     >
@@ -200,26 +198,45 @@ const BUCKET_COLOR: Record<Bucket, string> = {
   failed: c.textMuted,
 };
 
+// Short labels so the pill always fits its column; the full wording stays available to screen readers.
+const PILL_LABEL: Record<Bucket, string> = {
+  running: "Running",
+  leaked: "Leaked",
+  blocked_by_guard: "Guard blocked",
+  blocked_by_paypal: "PayPal blocked",
+  refused_by_agent: "Refused",
+  allowed: "Allowed",
+  benign_denied: "Honest denied",
+  failed: "Failed",
+};
+
 function StatusCell(props: CustomCellRendererProps) {
   const bucket = props.value as Bucket;
   const color = BUCKET_COLOR[bucket] ?? c.textMuted;
   return (
     <span
+      title={BUCKET_LABEL[bucket]}
+      aria-label={BUCKET_LABEL[bucket]}
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "2px 10px",
+        boxSizing: "border-box",
+        maxWidth: "100%",
+        padding: "0 9px",
         borderRadius: 999,
         border: `1px solid ${color}`,
         color,
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: 700,
+        letterSpacing: 0.3,
         lineHeight: "20px",
+        whiteSpace: "nowrap",
+        verticalAlign: "middle",
       }}
     >
-      <span aria-hidden style={{ width: 6, height: 6, borderRadius: 3, background: color }} />
-      {BUCKET_LABEL[bucket] ?? String(props.value ?? "")}
+      <span aria-hidden style={{ flex: "none", width: 6, height: 6, borderRadius: 3, background: color }} />
+      {PILL_LABEL[bucket] ?? String(props.value ?? "")}
     </span>
   );
 }

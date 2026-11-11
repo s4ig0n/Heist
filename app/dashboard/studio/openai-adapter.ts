@@ -507,11 +507,21 @@ class ResponseStreamTranslator {
                 return [];
             case 'response.failed':
             case 'response.incomplete':
-                outcome.error ??= new Error(input.response?.error?.message ?? `Response ${input.type}.`);
+                outcome.error ??= new Error(
+                    input.response?.error?.message ??
+                        (input.response?.incomplete_details?.reason
+                            ? `Response incomplete: ${input.response.incomplete_details.reason}.`
+                            : `Response ${input.type}.`),
+                );
                 return [];
-            case 'error':
-                outcome.error ??= new Error(`${input.code ?? 'api_error'}: ${input.message}`);
+            case 'error': {
+                // OpenAI sends the details either at the top level or nested under `error`.
+                const detail = input.error ?? {};
+                const code = input.code ?? detail.code ?? detail.type ?? 'api_error';
+                const message = input.message ?? detail.message ?? 'The model provider returned an error without a message.';
+                outcome.error ??= new Error(`${code}: ${message}`);
                 return [];
+            }
             default:
                 return [];
         }

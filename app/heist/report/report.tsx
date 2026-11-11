@@ -249,24 +249,38 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
       </section>
 
       {analyst && rows && !empty && !error ? (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, padding: "0 16px 12px" }}>
-          <button
-            type="button"
-            onClick={() => setAnalystOpen((open) => !open)}
-            aria-pressed={analystOpen}
-            style={{ ...control, minHeight: 44, background: analystOpen ? c.surfaceRaised : c.gold, color: analystOpen ? c.text : c.background, fontWeight: 700, cursor: "pointer" }}
-          >
-            {analystOpen ? "Close the Forensics Analyst" : "Ask the Forensics Analyst"}
-          </button>
-          <span style={{ fontSize: 13, color: c.textMuted }}>
-            {analystOpen
-              ? "Try: \u201cWhich persona cost us most? Chart it.\u201d The board is editable while the analyst is open."
-              : "A custom AG Studio agent with Heist's own tools, working with Studio's built-in agents."}
-          </span>
-        </div>
+        // Floats bottom-right; while the panel is open it moves left so it never covers the chat's Send button.
+        <button
+          type="button"
+          onClick={() => setAnalystOpen((open) => !open)}
+          aria-pressed={analystOpen}
+          aria-label={analystOpen ? "Close the Forensics Analyst" : undefined}
+          title={analystOpen ? "Close the analyst" : "A custom AG Studio agent with Heist's own tools, working with Studio's built-in agents"}
+          style={{
+            ...control,
+            position: "fixed",
+            bottom: 24,
+            right: analystOpen ? ANALYST_PANEL_WIDTH + 40 : 24,
+            zIndex: 40,
+            height: 48,
+            width: analystOpen ? 48 : undefined,
+            padding: analystOpen ? 0 : "0 20px",
+            borderRadius: analystOpen ? "50%" : 0,
+            fontSize: analystOpen ? 20 : undefined,
+            lineHeight: 1,
+            background: analystOpen ? c.surfaceRaised : c.gold,
+            color: analystOpen ? c.text : c.background,
+            border: `1px solid ${analystOpen ? c.border : c.gold}`,
+            fontWeight: 800,
+            cursor: "pointer",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
+          }}
+        >
+          {analystOpen ? "\u2715" : "Ask the Forensics Analyst"}
+        </button>
       ) : null}
 
-      <div ref={boardRef} style={{ height: analystOpen ? "calc(100vh - 16px)" : 1290, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
+      <div ref={boardRef} onKeyDownCapture={suggestOnTab} style={{ height: analystOpen ? "calc(100vh - 16px)" : REPORT_BOARD_HEIGHT, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
         {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio
@@ -278,6 +292,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
               ai={analyst}
               initialState={reportBoard}
               mode={analyst && analystOpen ? "edit" : "view"}
+              localeText={{ aiMessageInputPlaceholder: `${ANALYST_SUGGESTION}  (Tab to use)` }}
               panels={{ view: {}, edit: { right: ["ai"] } }}
             />
           </AgStudioProvider>
@@ -346,6 +361,24 @@ function Stat({
 }
 
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+// Tall enough for the whole board, so the page has the only scrollbar while the analyst is closed.
+const REPORT_BOARD_HEIGHT = 1320;
+// Matches studioAiPanelWidth in ../studio/theme.ts.
+const ANALYST_PANEL_WIDTH = 440;
+const ANALYST_SUGGESTION = "Which persona cost us most? Chart it.";
+
+/** Tab in the analyst's empty message box fills in the suggested question, like accepting a hint. */
+function suggestOnTab(event: React.KeyboardEvent<HTMLDivElement>) {
+  const box = event.target as HTMLElement;
+  if (event.key !== "Tab" || event.shiftKey || !(box instanceof HTMLTextAreaElement) || box.value !== "") return;
+  if (!box.placeholder.startsWith(ANALYST_SUGGESTION)) return;
+  event.preventDefault();
+  // Studio's input is a controlled React field, so set the value the way a keystroke would.
+  const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  setValue?.call(box, ANALYST_SUGGESTION);
+  box.dispatchEvent(new Event("input", { bubbles: true }));
+}
 const DISPLAY = 'Archivo, "Arial Narrow", system-ui, sans-serif';
 const money = (n: number) => `$${n.toFixed(2)}`;
 const pct = (n: number) => `${Math.round(n * 100)}%`;

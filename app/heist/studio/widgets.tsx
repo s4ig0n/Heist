@@ -10,6 +10,7 @@ import type { AgExternalShape, AgFormatShapeParams, AgWidgetField, AgWidgetParam
 import { createWidgets, type AgWidgetDefinition } from "ag-studio-react";
 import type { CustomCellRendererProps } from "ag-grid-react";
 import { heistColors as c } from "@/app/heist/heist-theme";
+import { statValueWhenEmpty } from "@/lib/heist/stat-value";
 import { BUCKET_LABEL, type Bucket } from "@/lib/heist/stream-state";
 
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
@@ -227,8 +228,8 @@ function StatTile(params: AgWidgetParams<StatTileState>) {
       .then(({ results }) => {
         if (cancelled) return;
         const row = results.rows[0];
-        // No rows means nothing matched yet (for example, no leaks): that is a real zero.
-        setValue(row ? readNumber(row, field) : 0);
+        // No rows: a count or sum is a real zero (no leaks yet), but a run with no score has no score.
+        setValue(row ? readNumber(row, field) : statValueWhenEmpty((field as { aggregation?: string }).aggregation));
       })
       .catch(() => !cancelled && setValue(null));
     return () => {

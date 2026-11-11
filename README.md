@@ -126,7 +126,7 @@ Every PayPal call goes through one rate limiter, kept under the sandbox's per-mi
 ### Runtime AI
 
 - **Gemini `gemini-3.1-flash-lite`** — runs Nimbus (temperature 0). The recorded attacks are scripted; a model-driven attacker mode exists but is not used in the recordings.
-- **AG Studio Forensics Analyst** — custom `run_summary`, `explain_leak`, `propose_patch`, and `compare_runs` tools over verified replay data, registered beside Studio's built-in agents and served through `/api/analyst`. Not yet verified on the production deploy.
+- **AG Studio Forensics Analyst** — custom `run_summary`, `explain_leak`, `propose_patch`, and `compare_runs` tools over verified replay data, registered beside Studio's built-in agents and served through `/api/analyst`. Verified on the production deploy on November 11, 2026: asked "Which persona cost us most? Chart it.", it called `run_summary`, handed the chart to Studio's widget agent, and answered Time Traveler, $96.
 - **OpenAI Responses API adapter** — streams the Studio analyst through the server-side `/api/ai/responses` proxy; the key never reaches the browser.
 
 ## Safety and honest framing

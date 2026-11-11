@@ -34,7 +34,7 @@ Use only the recorded PayPal sandbox runs in `packages/fixtures/recorded`. Label
 
 > Here is the largest leak: Time Traveler. The merchant record says this 480-dollar parka is 45 days old, with no return and no damage photo. The attacker invents a backorder and says a photo is on file. Nimbus issues a 96-dollar credit. Heist reads refund 7LC74703MG5150511 back from PayPal and identifies the broken window and evidence rules. The 480 dollars is the order value; the verified leak is 96.
 
-## 1:43–2:03 — Ask the analyst (only if verified)
+## 1:43–2:03 — Ask the analyst (verified on the deploy, November 11)
 
 **Use this segment only after the production checklist confirms the Analyst creates the chart on the deployed site.** If it is not verified, replace it with 20 more seconds of Attack Replay (the Trojan Note case study: the boxed planted note in `trojan-note-plain`, then `trojan-note-guarded`, where the note is removed and Nimbus refuses) and do not mention the Analyst.
 

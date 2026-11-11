@@ -60,9 +60,24 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
   // Studio only shows its assistant panel in edit mode, so asking the analyst switches the board to edit.
   const [analystOpen, setAnalystOpen] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
+  // Studio's own ">>" on the assistant panel counts as closing the analyst, so the board drops back to view mode.
+  const closeOnCollapse = (event: React.MouseEvent<HTMLDivElement>) => {
+    const header = (event.target as HTMLElement).closest(".ag-studio-ai-panel .ag-studio-panel-header");
+    if (!header) return;
+    requestAnimationFrame(() => {
+      if (header.getAttribute("aria-expanded") === "false") setAnalystOpen(false);
+    });
+  };
   // While chatting, the board fits the window so the assistant's suggestions, replies and input are all on screen.
   useEffect(() => {
-    if (analystOpen) boardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    if (!analystOpen) return;
+    boardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    // Studio remembers a panel folded with ">>"; reopening the analyst should show it expanded.
+    const timer = setTimeout(() => {
+      const header = boardRef.current?.querySelector<HTMLElement>(".ag-studio-ai-panel .ag-studio-panel-header");
+      if (header?.getAttribute("aria-expanded") === "false") header.click();
+    }, 150);
+    return () => clearTimeout(timer);
   }, [analystOpen]);
 
   useEffect(() => {
@@ -280,7 +295,7 @@ function ReportBody({ licenseKey, analystModels }: { licenseKey?: string; analys
         </button>
       ) : null}
 
-      <div ref={boardRef} onKeyDownCapture={suggestOnTab} style={{ height: analystOpen ? "calc(100vh - 16px)" : REPORT_BOARD_HEIGHT, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
+      <div ref={boardRef} onKeyDownCapture={suggestOnTab} onClickCapture={closeOnCollapse} style={{ height: analystOpen ? "calc(100vh - 16px)" : REPORT_BOARD_HEIGHT, padding: "0 0 16px", scrollMarginTop: 8, overflowX: "auto", overflowY: "hidden" }}>
         {rows && !empty && !error ? (
           <AgStudioProvider licenseKey={licenseKey} modules={analyst ? [AgStudioAiModule] : undefined}>
             <AgStudio

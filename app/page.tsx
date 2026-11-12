@@ -105,7 +105,7 @@ export default function Home() {
               </p>
               <div className="hl-ctas">
                 <Link href="/heist/arena?replay=baseline-run" className="hl-btn hl-btn-pop">
-                  Watch the replay
+                  Watch it in the Arena
                 </Link>
                 <a href="#evidence" className="hl-btn hl-btn-line">
                   See the evidence
@@ -254,6 +254,9 @@ export default function Home() {
             </p>
             <Link href="/heist/replay?run=trojan-note-plain" className="hl-mono" style={{ fontSize: 13 }}>
               Replay the Trojan Note →
+            </Link>{" "}
+            <Link href="/heist/replay?run=trojan-note-guarded" className="hl-mono" style={{ fontSize: 13 }}>
+              Replay with the guard →
             </Link>
           </article>
           <article className="hl-panel" aria-labelledby="hl-whisperer">

@@ -47,13 +47,19 @@ const steps = [
   { n: "04", title: "Stage it again", body: "Same customers, same lines, guarded tools. Covered leaks drop to zero and the honest customer still gets paid." },
 ];
 
-const blocks = [
-  ["Refunding more than the capture", "A refund past the merchant’s 30-day window"],
-  ["Refunding a capture already fully refunded", "A refund with no return received and no damage on file"],
-  ["Refunds after PayPal’s own time limit", "A full refund where only a 20% damage credit applies"],
-  ["", "A second partial refund on the same order"],
-  ["", "A refund with no amount, which refunds the whole capture"],
-  ["", "A refund on another customer’s order"],
+const paypalRefuses = [
+  "Refunding more than the capture",
+  "Refunding a capture already fully refunded",
+  "Refunds after PayPal’s own time limit",
+];
+
+const policyForbids = [
+  "A refund past the merchant’s 30-day window",
+  "A refund with no return received and no damage on file",
+  "A full refund where only a 20% damage credit applies",
+  "A second partial refund on the same order",
+  "A refund with no amount, which refunds the whole capture",
+  "A refund on another customer’s order",
 ];
 
 const coverage = [
@@ -167,25 +173,27 @@ export default function Home() {
           <h2 id="hl-blocks" className="hl-display hl-h2">
             What PayPal blocks. <span className="hl-serif hl-muted hl-line">What your agent can still do.</span>
           </h2>
-          <div className="hl-table-wrap">
-            <table className="hl-table">
-              <thead>
-                <tr>
-                  <th scope="col">PayPal refuses these itself</th>
-                  <th scope="col">PayPal correctly allows these, and merchant policy forbids them</th>
-                </tr>
-              </thead>
-              <tbody>
-                {blocks.map(([left, right]) => (
-                  <tr key={right}>
-                    <td className="hl-muted">{left}</td>
-                    <td>{right}</td>
-                  </tr>
+          <div className="hl-split">
+            <div className="hl-split-col">
+              <h3 className="hl-split-head">PayPal refuses these itself</h3>
+              <ul className="hl-split-list">
+                {paypalRefuses.map((item) => (
+                  <li key={item} className="hl-muted">
+                    {item}
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </div>
+            <div className="hl-split-col">
+              <h3 className="hl-split-head">PayPal correctly allows these, and merchant policy forbids them</h3>
+              <ul className="hl-split-list">
+                {policyForbids.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <p className="hl-small">Heist counts only the right-hand column as leaks. PayPal’s own refusals are reported separately.</p>
+          <p className="hl-small">Heist counts only what merchant policy forbids as leaks. PayPal’s own refusals are reported separately.</p>
         </section>
 
         <section id="evidence" className="hl-wrap hl-section" aria-labelledby="hl-evidence">

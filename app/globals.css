@@ -67,6 +67,12 @@ body {
   outline-offset: 3px;
 }
 
+/* The Arena streams one event at a time. AG Studio reloads its widgets on every update and dims them
+   behind a "Loading..." overlay, so a live run flickered. Keep the last render on screen instead. */
+.heist-arena-grid .ag-studio-layout-widget-loading-overlay-active {
+  display: none;
+}
+
 .heist-arena-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

@@ -129,6 +129,12 @@
 .hl-control { background: var(--hl-chalk); color: var(--hl-ink); padding: 18px 22px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
 
 /* Tables */
+.hl-split { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--hl-line); }
+.hl-split-col + .hl-split-col { border-left: 1px solid var(--hl-line); }
+.hl-split-head { margin: 0; padding: 14px 18px; font-family: var(--hl-mono); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--hl-muted); font-weight: 600; background: var(--hl-surface); border-bottom: 1px solid var(--hl-line); font-stretch: 100%; }
+.hl-split-list { list-style: none; margin: 0; padding: 0; font-stretch: 100%; font-size: 16px; }
+.hl-split-list li { padding: 14px 18px; border-bottom: 1px solid var(--hl-line); }
+.hl-split-list li:last-child { border-bottom: 0; }
 .hl-table-wrap { overflow-x: auto; border: 1px solid var(--hl-line); }
 .hl-table { width: 100%; border-collapse: collapse; font-stretch: 100%; font-size: 16px; min-width: 560px; }
 .hl-table th, .hl-table td { text-align: left; vertical-align: top; padding: 14px 18px; border-bottom: 1px solid var(--hl-line); }
@@ -160,4 +166,6 @@
   .hl-section { padding-block: 48px; }
   .hl-header .hl-btn { margin-left: 0; }
   .hl-tape-block { margin-top: 32px; }
+  .hl-split { grid-template-columns: 1fr; }
+  .hl-split-col + .hl-split-col { border-left: 0; border-top: 1px solid var(--hl-line); }
 }

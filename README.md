@@ -201,7 +201,6 @@ relying on them. Each use is logged in [`docs/APIMATIC.md`](docs/APIMATIC.md).
 - [`docs/RUNS-API.md`](docs/RUNS-API.md) — run, replay, patch, rerun, and SSE contracts.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — implementation and scope decisions.
 - [`docs/CONTRACT-CHANGE-REQUESTS.md`](docs/CONTRACT-CHANGE-REQUESTS.md) — explicit shared-contract requests.
-- [`docs/VIDEO-SCRIPT.md`](docs/VIDEO-SCRIPT.md) — timed demo script and recording checklist.
 - [`docs/DEVPOST.md`](docs/DEVPOST.md) — submission copy and runtime AI disclosure.
 
 ## Built during the hackathon

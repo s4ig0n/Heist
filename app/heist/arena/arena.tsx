@@ -3,7 +3,7 @@
 // The Arena: an AG Studio board that fills live from a Heist run, a feed beside it, and an alarm on
 // the first leak. Today it plays recorded real runs (/api/replays); live runs use the same stream format.
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { HeistShell, REPLAY_LABEL, control } from "../shell";
 import { enableStudioDevValidations } from "ag-studio";
@@ -39,7 +39,7 @@ function ArenaBoard({ replays, initialReplay, liveStream, licenseKey }: ArenaPro
   const url = live ?? (replayId ? `/api/replays/${replayId}/stream?speed=${speed}&play=${playKey}` : null);
   const state = useHeistStream(url);
   const totals = liveTotals(state);
-  const data = useMemo(() => buildHeistData(state), [state]);
+  const data = useSteadyData(useMemo(() => buildHeistData(state), [state]));
 
   useEffect(() => {
     bumpDataVersion();
@@ -174,4 +174,30 @@ function statusText(status: string) {
   if (status === "failed") return "Stream ended";
   if (status === "connecting" || status === "queued") return "Connecting";
   return "Idle";
+}
+
+// The stream changes state on every chat message, but AG Studio redraws (briefly showing skeleton rows
+// and "ERR" cells) whenever it is handed a new data object. Hand it new data only when the content has
+// actually changed, at most every 700 ms, and always end on the latest state.
+function useSteadyData<T>(next: T): T {
+  const [shown, setShown] = useState(next);
+  const shownKey = useRef(JSON.stringify(next));
+  const latest = useRef(next);
+  const lastAt = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    latest.current = next;
+    const key = JSON.stringify(next);
+    if (key === shownKey.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    const wait = Math.max(0, 700 - (Date.now() - lastAt.current));
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      lastAt.current = Date.now();
+      shownKey.current = JSON.stringify(latest.current);
+      setShown(latest.current);
+    }, wait);
+  }, [next]);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  return shown;
 }

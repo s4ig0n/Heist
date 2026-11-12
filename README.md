@@ -6,7 +6,7 @@ Heist red-teams a refund-capable AI support agent with adversarial customer pers
 
 The intended users are commerce, support, fraud, and engineering teams deploying agents with money-moving tools.
 
-**Try it:** [heist-dts7.onrender.com/heist/arena](https://heist-dts7.onrender.com/heist/arena). Pick a recorded run and press Replay. No login or keys are needed. The free host sleeps when idle, so the first load can take about a minute.
+**Try it:** start at [heist-dts7.onrender.com](https://heist-dts7.onrender.com) for the result in one page, or jump straight to the demo at [heist-dts7.onrender.com/heist/arena](https://heist-dts7.onrender.com/heist/arena), pick a recorded run and press Replay. No login or keys are needed. The free host sleeps when idle, so the first load can take about a minute.
 
 ## The problem
 

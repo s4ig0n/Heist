@@ -30,7 +30,7 @@ PayPal correctly refuses over-refunds, refunds on fully refunded captures, and r
 - **Start here:** [heist-dts7.onrender.com](https://heist-dts7.onrender.com), the result on one page.
 - **Jump straight to the demo:** [heist-dts7.onrender.com/heist/arena](https://heist-dts7.onrender.com/heist/arena). Pick a recorded run and press Replay.
 
-No login or keys needed. The free host can take about a minute to wake.
+No login or keys needed.
 
 ## Inspiration
 

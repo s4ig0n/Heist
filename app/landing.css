@@ -23,12 +23,14 @@
   color: var(--hl-chalk);
   font-family: var(--hl-display);
   min-height: 100vh;
-  /* The vault-dial target from the site icon; links and buttons keep the normal pointer. */
+  /* The vault-dial target from the site icon. Over links and buttons its centre dot turns red. */
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='8.5' fill='none' stroke='%23141414' stroke-width='4'/%3E%3Ccircle cx='14' cy='14' r='8.5' fill='none' stroke='%23ECEAE4' stroke-width='2'/%3E%3Cpath d='M14 2v6M14 20v6M2 14h6M20 14h6' stroke='%23141414' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M14 2v6M14 20v6M2 14h6M20 14h6' stroke='%23ECEAE4' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='14' cy='14' r='2.5' fill='%23FFE14D'/%3E%3C/svg%3E") 14 14, crosshair;
   width: 100%;
 }
 
-.hl a, .hl button { cursor: pointer; }
+.hl a, .hl button, .hl [role="button"] {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='8.5' fill='none' stroke='%23141414' stroke-width='4'/%3E%3Ccircle cx='14' cy='14' r='8.5' fill='none' stroke='%23ECEAE4' stroke-width='2'/%3E%3Cpath d='M14 2v6M14 20v6M2 14h6M20 14h6' stroke='%23141414' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M14 2v6M14 20v6M2 14h6M20 14h6' stroke='%23ECEAE4' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='14' cy='14' r='2.5' fill='%23FF3B30'/%3E%3C/svg%3E") 14 14, pointer;
+}
 .hl a { color: var(--hl-chalk); }
 .hl a:hover { color: #ffffff; }
 .hl :focus-visible { outline: 3px solid var(--hl-pop); outline-offset: 3px; }
